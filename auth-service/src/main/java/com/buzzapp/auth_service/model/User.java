@@ -23,4 +23,7 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
+
+    @Column(nullable = false, unique = true)
+    private Long school_id;
 }
