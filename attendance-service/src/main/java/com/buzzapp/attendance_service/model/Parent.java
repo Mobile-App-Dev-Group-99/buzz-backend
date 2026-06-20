@@ -18,7 +18,7 @@ public class Parent {
     private String lastName;
 
     @Column(nullable = false)
-    private int phone;
+    private String phone;
 
     @Column(nullable = false)
     private String email;
