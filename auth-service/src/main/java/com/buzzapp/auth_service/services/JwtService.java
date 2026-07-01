@@ -1,5 +1,6 @@
 package com.buzzapp.auth_service.services;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -17,15 +18,17 @@ public class JwtService {
     @Value("${jwt.expiration}")
     private long expiration;
 
-    public String generateToken(String email, String role) {
+    public String generateToken(String email, String role, Long schoolId) {
         return Jwts.builder()
                 .setSubject(email)
                 .claim("role", role)
+                .claim("schoolId", schoolId)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(Keys.hmacShaKeyFor(secret.getBytes()), SignatureAlgorithm.HS256)
                 .compact();
     }
+
     public  String extractEmail(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(Keys.hmacShaKeyFor(secret.getBytes()))
@@ -42,5 +45,17 @@ public class JwtService {
                 .parseClaimsJws(token)
                 .getBody()
                 .get("role");
+    }
+
+    public Long extractSchoolId(String token) {
+        Object schoolId = Jwts.parserBuilder()
+                .setSigningKey(Keys.hmacShaKeyFor(secret.getBytes()))
+                .build()
+                .parseClaimsJws(token)
+                .getBody()
+                .get("schoolId");
+        if (schoolId instanceof Integer) return ((Integer) schoolId).longValue();
+        if (schoolId instanceof Long) return (Long) schoolId;
+        return null;
     }
 }
