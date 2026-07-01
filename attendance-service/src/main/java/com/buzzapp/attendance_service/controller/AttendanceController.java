@@ -42,7 +42,7 @@ public class AttendanceController {
 
     @GetMapping("/class/{classId}/today")
     public ResponseEntity<List<StudentAttendanceEntry>> classToday(@PathVariable Long classId) {
-        return ResponseEntity.ok(attendanceService.getClassToday(classId, null));
+        return ResponseEntity.ok(attendanceService.getClassToday(String.valueOf(classId), null));
     }
 
     @GetMapping("/student/{studentId}")
@@ -58,5 +58,10 @@ public class AttendanceController {
     @GetMapping("/student/{studentId}/week")
     public ResponseEntity<WeeklyCalendarResponse> studentWeek(@PathVariable Long studentId) {
         return ResponseEntity.ok(attendanceService.getStudentWeek(studentId, null));
+    }
+
+    @GetMapping("/class/{className}/today")
+    public ResponseEntity<List<StudentAttendanceEntry>> classToday(@PathVariable String className) {
+        return ResponseEntity.ok(attendanceService.getClassToday(className, null));
     }
 }
