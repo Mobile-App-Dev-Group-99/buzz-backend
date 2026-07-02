@@ -8,6 +8,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -29,14 +32,23 @@ public class AuthController {
     }
 
     @GetMapping("/validate")
-    public ResponseEntity<String> validate(HttpServletRequest request) {
+    public ResponseEntity<?> validate(HttpServletRequest request) {
         String authHeader = request.getHeader("Authorization");
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             return ResponseEntity.status(401).body("Missing token");
         }
         try {
-            String email = jwtService.extractEmail(authHeader.substring(7));
-            return ResponseEntity.ok("Valid — " + email);
+            String token = authHeader.substring(7);
+            String email = jwtService.extractEmail(token);
+            String role = jwtService.extractRole(token);
+            Long schoolId = jwtService.extractSchoolId(token);
+
+            Map<String, Object> body = new HashMap<>();
+            body.put("email", email);
+            body.put("role", role);
+            body.put("schoolId", schoolId);
+
+            return ResponseEntity.ok(body);
         } catch (Exception e) {
             return ResponseEntity.status(401).body("Invalid token");
         }

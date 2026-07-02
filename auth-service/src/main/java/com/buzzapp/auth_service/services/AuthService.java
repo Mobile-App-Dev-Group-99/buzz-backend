@@ -31,7 +31,7 @@ public class AuthService {
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new RuntimeException("Wrong password");
         }
-        String token = jwtService.generateToken(user.getEmail(), user.getRole().toString());
+        String token = jwtService.generateToken(user.getEmail(), user.getRole().toString(), user.getSchool_id());
         return new LoginResponse(token, user.getRole().toString(), user.getEmail());
     }
 
@@ -64,7 +64,7 @@ public class AuthService {
         admin.setSchool_id(school.getId());
         userRepository.save(admin);
 
-        String token = jwtService.generateToken(admin.getEmail(), admin.getRole().name());
+        String token = jwtService.generateToken(admin.getEmail(), admin.getRole().name(), school.getId());
 
         return new OnboardSchoolResponse(token, admin.getRole().name(), admin.getEmail(), school.getId());
     }
