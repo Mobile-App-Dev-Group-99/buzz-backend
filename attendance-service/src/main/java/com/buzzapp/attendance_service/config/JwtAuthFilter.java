@@ -35,14 +35,21 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         String token = authHeader.substring(7);
 
+        System.out.println("Validating token: " + token.substring(0, 20));
+
         if (!tokenValidationService.validate(token)) {
+            System.out.println("Token validation failed");
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write("Invalid or expired token");
             return;
         }
 
+        System.out.println("Token valid, extracting claims");
+
         String role = tokenValidationService.extractRole(token);
         Long schoolId = tokenValidationService.extractSchoolId(token);
+
+        System.out.println("Role: " + role + ", SchoolId: " + schoolId);
 
         if (role != null) {
             UsernamePasswordAuthenticationToken authentication =

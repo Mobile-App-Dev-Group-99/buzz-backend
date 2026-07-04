@@ -2,6 +2,7 @@ package com.buzzapp.auth_service.model;
 
 public enum Role {
     ADMIN,
-    TEACHERS,
-    STUDENTS
+    TEACHER,
+    STUDENT,
+    PARENT
 }

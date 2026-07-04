@@ -50,6 +50,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             // Invalid token — do not set authentication; Security will reject the request
         }
 
+
         filterChain.doFilter(request, response);
     }
 }
