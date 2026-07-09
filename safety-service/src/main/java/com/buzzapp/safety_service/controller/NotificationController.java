@@ -4,6 +4,7 @@ import com.buzzapp.safety_service.dto.*;
 import com.buzzapp.safety_service.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,12 +17,18 @@ public class NotificationController {
     private final NotificationService notificationService;
 
     @PostMapping("/send")
-    public ResponseEntity<NotificationResponse> send(@RequestBody SendNotificationRequest request) {
-        return ResponseEntity.ok(notificationService.sendNotification(request, null));
+    public ResponseEntity<NotificationResponse> send(
+            @RequestBody SendNotificationRequest request,
+            Authentication authentication) {
+        Long schoolId = (Long) authentication.getPrincipal();
+        return ResponseEntity.ok(notificationService.sendNotification(request, schoolId));
     }
 
     @GetMapping("/parent/{parentId}")
-    public ResponseEntity<List<NotificationResponse>> getByParent(@PathVariable Long parentId) {
-        return ResponseEntity.ok(notificationService.getNotificationsByParent(parentId, null));
+    public ResponseEntity<List<NotificationResponse>> getByParent(
+            @PathVariable Long parentId,
+            Authentication authentication) {
+        Long schoolId = (Long) authentication.getPrincipal();
+        return ResponseEntity.ok(notificationService.getNotificationsByParent(parentId, schoolId));
     }
 }
