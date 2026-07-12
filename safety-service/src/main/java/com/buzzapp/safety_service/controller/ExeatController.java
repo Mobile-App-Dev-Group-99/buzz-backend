@@ -1,0 +1,61 @@
+package com.buzzapp.safety_service.controller;
+
+import com.buzzapp.safety_service.dto.*;
+import com.buzzapp.safety_service.service.ExeatService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/exeat")
+@RequiredArgsConstructor
+public class ExeatController {
+
+    private final ExeatService exeatService;
+
+    @PostMapping("/create")
+    public ResponseEntity<ExeatResponse> create(
+            @RequestBody CreateExeatRequest request,
+            Authentication authentication) {
+        Long schoolId = (Long) authentication.getPrincipal();
+        return ResponseEntity.ok(exeatService.createExeat(request, schoolId));
+    }
+
+    @PutMapping("/{id}/approve")
+    public ResponseEntity<ExeatResponse> approve(
+            @PathVariable Long id,
+            @RequestBody ApproveExeatRequest request,
+            Authentication authentication) {
+        Long schoolId = (Long) authentication.getPrincipal();
+        return ResponseEntity.ok(exeatService.approveExeat(id, request, schoolId));
+    }
+
+    @PutMapping("/{id}/deny")
+    public ResponseEntity<ExeatResponse> deny(
+            @PathVariable Long id,
+            @RequestBody ApproveExeatRequest request,
+            Authentication authentication) {
+        Long schoolId = (Long) authentication.getPrincipal();
+        return ResponseEntity.ok(exeatService.denyExeat(id, request, schoolId));
+    }
+
+    @PutMapping("/{id}/return")
+    public ResponseEntity<ExeatResponse> recordReturn(
+            @PathVariable Long id,
+            @RequestBody ReturnExeatRequest request,
+            Authentication authentication) {
+        Long schoolId = (Long) authentication.getPrincipal();
+        return ResponseEntity.ok(exeatService.recordReturn(id, request, schoolId));
+    }
+
+    @GetMapping("/student/{studentId}")
+    public ResponseEntity<List<ExeatResponse>> getByStudent(
+            @PathVariable Long studentId,
+            Authentication authentication) {
+        Long schoolId = (Long) authentication.getPrincipal();
+        return ResponseEntity.ok(exeatService.getExeatsByStudent(studentId, schoolId));
+    }
+}
