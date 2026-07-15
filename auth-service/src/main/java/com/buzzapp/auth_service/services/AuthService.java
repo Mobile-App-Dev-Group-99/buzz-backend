@@ -44,12 +44,12 @@ public class AuthService {
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(Role.valueOf(request.getRole()));
+        user.setSchool_id(request.getSchoolId());
         userRepository.save(user);
         return "User registered successfully";
     }
 
     public OnboardSchoolResponse onboardSchool(OnboardSchoolRequest request) {
-
         School school = new School();
         school.setName(request.getSchoolName());
         school.setLocation(request.getLocation());

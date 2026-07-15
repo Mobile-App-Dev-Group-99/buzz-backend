@@ -20,13 +20,13 @@ public class AuthController {
     private final JwtService jwtService;
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request){
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
         LoginResponse response = authService.login(request);
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody RegisterRequest request){
+    public ResponseEntity<String> register(@RequestBody RegisterRequest request) {
         String message = authService.register(request);
         return ResponseEntity.ok(message);
     }
@@ -54,9 +54,8 @@ public class AuthController {
         }
     }
 
-   @PostMapping("/onboard-school")
-   public ResponseEntity<OnboardSchoolResponse> onboardSchool(@RequestBody OnboardSchoolRequest request) {
+    @PostMapping("/onboard-school")
+    public ResponseEntity<OnboardSchoolResponse> onboardSchool(@RequestBody OnboardSchoolRequest request) {
         return ResponseEntity.ok(authService.onboardSchool(request));
-}
-
+    }
 }
