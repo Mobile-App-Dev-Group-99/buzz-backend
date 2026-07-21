@@ -1,0 +1,20 @@
+# Environment files
+.env
+.env.*
+
+# IDE
+.idea/
+*.iml
+
+# Build artifacts
+target/
+*.class
+*.jar
+*.war
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Maven
+.mvn/repository/

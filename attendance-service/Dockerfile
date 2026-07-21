@@ -18,5 +18,6 @@ USER spring:spring
 
 COPY --from=build /app/target/*.jar app.jar
 
-EXPOSE 8082
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENV PORT=8082
+EXPOSE ${PORT}
+ENTRYPOINT ["sh", "-c", "java -jar app.jar --server.port=${PORT}"]
