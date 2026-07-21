@@ -3,22 +3,23 @@ package com.buzzapp.attendance_service.model;
 import jakarta.persistence.*;
 import lombok.Data;
 
-import java.time.LocalDateTime;
-
 @Entity
+@Table(name = "users")
 @Data
-@Table(name = "biometric_templates")
-public class BiometricTemplate {
+public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private Long studentId;
+    @Column(nullable = false, unique = true)
+    private String username;
+
+    @Column(nullable = false, unique = true)
+    private String email;
 
     @Column(nullable = false)
-    private String template;
+    private String role;
 
     @Column(nullable = false)
-    private LocalDateTime createdAt;
+    private Long schoolId;
 }

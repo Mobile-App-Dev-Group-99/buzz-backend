@@ -4,9 +4,11 @@ import com.buzzapp.attendance_service.model.Student;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface StudentRepository extends JpaRepository<Student, Long> {
     List<Student> findBySchoolId(Long schoolId);
     List<Student> findByClassNameAndSchoolId(String className, Long schoolId);
     long countBySchoolId(Long schoolId);
+    Optional<Student> findByUserId(Long userId);
 }

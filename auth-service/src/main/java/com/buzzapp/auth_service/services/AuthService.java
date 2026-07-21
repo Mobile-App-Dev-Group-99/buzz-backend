@@ -32,7 +32,7 @@ public class AuthService {
             throw new RuntimeException("Wrong password");
         }
         String token = jwtService.generateToken(user.getEmail(), user.getRole().toString(), user.getSchool_id());
-        return new LoginResponse(token, user.getRole().toString(), user.getEmail());
+        return new LoginResponse(user.getEmail(), token, user.getRole().toString(), user.getSchool_id());
     }
 
     public String register(RegisterRequest request) {

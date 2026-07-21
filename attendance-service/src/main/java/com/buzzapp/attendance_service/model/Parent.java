@@ -17,12 +17,10 @@ public class Parent {
     @Column(nullable = false)
     private String lastName;
 
-    @Column(nullable = false)
     private String phone;
 
-    @Column(nullable = false)
     private String email;
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     private Long userId;
 }

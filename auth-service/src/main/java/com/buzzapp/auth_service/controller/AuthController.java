@@ -1,11 +1,14 @@
 package com.buzzapp.auth_service.controller;
 
 import com.buzzapp.auth_service.dto.*;
+import com.buzzapp.auth_service.model.User;
+import com.buzzapp.auth_service.repository.UserRepository;
 import com.buzzapp.auth_service.services.AuthService;
 import com.buzzapp.auth_service.services.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -18,6 +21,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final JwtService jwtService;
+    private final UserRepository userRepository;
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
@@ -52,6 +56,22 @@ public class AuthController {
         } catch (Exception e) {
             return ResponseEntity.status(401).body("Invalid token");
         }
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> getMe(Authentication auth) {
+        String email = (String) auth.getPrincipal();
+        return userRepository.findByEmail(email)
+                .map(user -> {
+                    Map<String, Object> body = new HashMap<>();
+                    body.put("id", user.getId());
+                    body.put("email", user.getEmail());
+                    body.put("role", user.getRole().toString());
+                    body.put("schoolId", user.getSchool_id());
+                    body.put("username", user.getUsername());
+                    return ResponseEntity.ok((Object) body);
+                })
+                .orElse(ResponseEntity.status(404).body("User not found"));
     }
 
     @PostMapping("/onboard-school")

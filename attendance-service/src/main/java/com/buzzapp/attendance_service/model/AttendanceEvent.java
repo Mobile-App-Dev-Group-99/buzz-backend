@@ -27,13 +27,11 @@ public class AttendanceEvent {
     @Column(nullable = false, name = "is_late")
     private boolean isLate;
 
-    @Column(nullable = false)
     private String gate;
 
     @Column(nullable = false)
     private Long schoolId;
 
-    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private AttendanceStatus status;
 }
