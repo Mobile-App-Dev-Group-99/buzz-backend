@@ -15,8 +15,12 @@ public class CorsConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowedOrigins(List.of(
-            "http://localhost:5173",   // web portal (Vite dev server)
-            "http://localhost:3000"    // fallback / alt dev port
+            "http://localhost:5173",
+            "http://localhost:3000",
+            "http://100.112.31.152:8090",
+            "http://100.112.31.152:19000",
+            "http://localhost:8081",
+            "http://10.0.2.2:8081"
         ));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type"));

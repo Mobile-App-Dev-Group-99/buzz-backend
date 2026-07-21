@@ -35,28 +35,20 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         String token = authHeader.substring(7);
 
-        System.out.println("Validating token: " + token.substring(0, 20));
+        TokenValidationService.TokenClaims claims = tokenValidationService.validateAndExtract(token);
 
-        if (!tokenValidationService.validate(token)) {
-            System.out.println("Token validation failed");
+        if (!claims.valid()) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write("Invalid or expired token");
             return;
         }
 
-        System.out.println("Token valid, extracting claims");
-
-        String role = tokenValidationService.extractRole(token);
-        Long schoolId = tokenValidationService.extractSchoolId(token);
-
-        System.out.println("Role: " + role + ", SchoolId: " + schoolId);
-
-        if (role != null) {
+        if (claims.role() != null) {
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
-                            schoolId,
-                            null,
-                            List.of(new SimpleGrantedAuthority("ROLE_" + role))
+                            claims.schoolId(),
+                            claims.email(),
+                            List.of(new SimpleGrantedAuthority("ROLE_" + claims.role()))
                     );
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }

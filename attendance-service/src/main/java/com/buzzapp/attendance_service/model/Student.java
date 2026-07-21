@@ -20,7 +20,7 @@ public class Student {
     @Column(nullable = false)
     private String lastName;
 
-    @Column(nullable = false)
+    @Column
     private String className;
 
     @Column
@@ -29,17 +29,17 @@ public class Student {
     @Column(nullable = false)
     private Long schoolId;
 
-    @Column(nullable = false)
+    @Column
     @Enumerated(EnumType.STRING)
     private Gender gender;
 
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     private Long userId;
 
-    @Column(nullable = false)
+    @Column
     private String photoUrl;
 
-    @Column(nullable = false)
+    @Column
     @Enumerated(EnumType.STRING)
     private StudentType studentType;
 }
