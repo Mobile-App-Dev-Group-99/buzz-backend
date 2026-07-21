@@ -1,0 +1,85 @@
+services:
+  - type: web
+    name: auth-service
+    runtime: image
+    image:
+      url: https://github.com/coach-panda07/buzz-backend.git
+      buildFilter:
+        type: path
+        paths:
+          - auth-service/**
+    dockerfilePath: ./auth-service/Dockerfile
+    envVars:
+      - key: SPRING_DATASOURCE_URL
+        value: jdbc:postgresql://buzz-db:5432/buzzdb
+      - key: SPRING_DATASOURCE_USERNAME
+        value: postgres
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: buzz-db
+          property: password
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRATION
+        value: "86400000"
+      - key: SPRING_JPA_HIBERNATE_DDL_AUTO
+        value: validate
+    healthCheckPath: /actuator/health
+
+  - type: web
+    name: attendance-service
+    runtime: image
+    image:
+      url: https://github.com/coach-panda07/buzz-backend.git
+      buildFilter:
+        type: path
+        paths:
+          - attendance-service/**
+    dockerfilePath: ./attendance-service/Dockerfile
+    envVars:
+      - key: SPRING_DATASOURCE_URL
+        value: jdbc:postgresql://buzz-db:5432/buzzdb
+      - key: SPRING_DATASOURCE_USERNAME
+        value: postgres
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: buzz-db
+          property: password
+      - key: AUTH_SERVICE_URL
+        value: http://auth-service.internal
+      - key: ATTENDANCE_ARRIVAL_CUTOFF
+        value: "08:00"
+      - key: SPRING_JPA_HIBERNATE_DDL_AUTO
+        value: validate
+    healthCheckPath: /actuator/health
+
+  - type: web
+    name: safety-service
+    runtime: image
+    image:
+      url: https://github.com/coach-panda07/buzz-backend.git
+      buildFilter:
+        type: path
+        paths:
+          - safety-service/**
+    dockerfilePath: ./safety-service/Dockerfile
+    envVars:
+      - key: SPRING_DATASOURCE_URL
+        value: jdbc:postgresql://buzz-db:5432/buzzdb
+      - key: SPRING_DATASOURCE_USERNAME
+        value: postgres
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: buzz-db
+          property: password
+      - key: AUTH_SERVICE_URL
+        value: http://auth-service.internal
+      - key: SPRING_JPA_HIBERNATE_DDL_AUTO
+        value: validate
+    healthCheckPath: /actuator/health
+
+databases:
+  - name: buzz-db
+    plan: free
+    databaseName: buzzdb
+    user: postgres
