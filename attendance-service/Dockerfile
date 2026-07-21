@@ -2,12 +2,12 @@
 FROM eclipse-temurin:26-jdk AS build
 WORKDIR /app
 
-COPY mvnw .
-COPY .mvn .mvn
-COPY pom.xml .
+COPY attendance-service/mvnw .
+COPY attendance-service/.mvn .mvn
+COPY attendance-service/pom.xml .
 RUN chmod +x mvnw && ./mvnw -B dependency:go-offline
 
-COPY src ./src
+COPY attendance-service/src ./src
 RUN ./mvnw -B clean package -DskipTests
 
 # --- Runtime stage ---
