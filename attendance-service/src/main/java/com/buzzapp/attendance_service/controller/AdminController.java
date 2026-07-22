@@ -166,6 +166,36 @@ public class AdminController {
                 .orElse(ResponseEntity.ok(Map.of("className", className, "teacherUserId", null, "teacherName", null)));
     }
 
+    @GetMapping("/teacher-classes")
+    public ResponseEntity<List<Map<String, Object>>> listTeacherClasses(Authentication auth) {
+        Long schoolId = (Long) auth.getPrincipal();
+        List<TeacherClass> classes = teacherClassRepository.findBySchoolId(schoolId);
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (TeacherClass tc : classes) {
+            User teacher = userRepository.findById(tc.getTeacherUserId()).orElse(null);
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("id", tc.getId());
+            item.put("teacherUserId", tc.getTeacherUserId());
+            item.put("teacherName", teacher != null ? teacher.getUsername() : "Unknown");
+            item.put("className", tc.getClassName());
+            result.add(item);
+        }
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/students/class/{className}")
+    public ResponseEntity<List<StudentResponse>> listStudentsByClass(
+            @PathVariable String className,
+            Authentication auth) {
+        Long schoolId = (Long) auth.getPrincipal();
+        List<StudentResponse> students = studentRepository.findBySchoolId(schoolId)
+                .stream()
+                .filter(s -> className.equals(s.getClassName()))
+                .map(this::toStudentResponse)
+                .toList();
+        return ResponseEntity.ok(students);
+    }
+
     private StudentResponse toStudentResponse(Student s) {
         StudentResponse r = new StudentResponse();
         r.setId(s.getId());
