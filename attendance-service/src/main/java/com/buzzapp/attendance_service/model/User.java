@@ -22,4 +22,7 @@ public class User {
 
     @Column(nullable = false)
     private Long schoolId;
+
+    @Column
+    private String password;
 }

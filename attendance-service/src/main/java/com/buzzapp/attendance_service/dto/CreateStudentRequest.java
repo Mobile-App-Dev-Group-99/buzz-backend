@@ -9,4 +9,6 @@ public class CreateStudentRequest {
     private String className;
     private String gender;
     private String studentType;
+    private String email;
+    private String password;
 }

@@ -6,6 +6,7 @@ import com.buzzapp.attendance_service.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -24,18 +25,37 @@ public class AdminController {
     private final StudentParentRepository studentParentRepository;
     private final TeacherClassRepository teacherClassRepository;
     private final UserRepository userRepository;
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     @PostMapping("/student")
-    public ResponseEntity<StudentResponse> createStudent(
+    public ResponseEntity<?> createStudent(
             @RequestBody CreateStudentRequest request,
             Authentication auth) {
         Long schoolId = (Long) auth.getPrincipal();
+
+        String email = request.getEmail();
+        String password = request.getPassword();
+        if (email == null || email.isBlank() || password == null || password.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email and password are required"));
+        }
+        if (userRepository.findByEmail(email).isPresent()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email already registered"));
+        }
+
+        User user = new User();
+        user.setUsername(request.getFirstName() + " " + request.getLastName());
+        user.setEmail(email);
+        user.setPassword(passwordEncoder.encode(password));
+        user.setRole("STUDENT");
+        user.setSchoolId(schoolId);
+        User savedUser = userRepository.save(user);
 
         Student student = new Student();
         student.setFirstName(request.getFirstName());
         student.setLastName(request.getLastName());
         student.setClassName(request.getClassName());
         student.setSchoolId(schoolId);
+        student.setUserId(savedUser.getId());
         if (request.getGender() != null) {
             student.setGender(Gender.valueOf(request.getGender()));
         }
@@ -44,17 +64,39 @@ public class AdminController {
         }
 
         Student saved = studentRepository.save(student);
-        return ResponseEntity.ok(toStudentResponse(saved));
+        StudentResponse resp = toStudentResponse(saved);
+        return ResponseEntity.ok(resp);
     }
 
     @PostMapping("/parent")
-    public ResponseEntity<ParentResponse> createParent(
+    public ResponseEntity<?> createParent(
             @RequestBody CreateParentRequest request,
             Authentication auth) {
+        String email = request.getEmail();
+        String password = request.getPassword();
+        if (email == null || email.isBlank() || password == null || password.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email and password are required"));
+        }
+        if (userRepository.findByEmail(email).isPresent()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Email already registered"));
+        }
+
+        Long schoolId = (Long) auth.getPrincipal();
+
+        User user = new User();
+        user.setUsername(request.getFirstName() + " " + request.getLastName());
+        user.setEmail(email);
+        user.setPassword(passwordEncoder.encode(password));
+        user.setRole("PARENT");
+        user.setSchoolId(schoolId);
+        User savedUser = userRepository.save(user);
+
         Parent parent = new Parent();
         parent.setFirstName(request.getFirstName());
         parent.setLastName(request.getLastName());
         parent.setPhone(request.getPhone());
+        parent.setEmail(email);
+        parent.setUserId(savedUser.getId());
 
         Parent saved = parentRepository.save(parent);
         return ResponseEntity.ok(toParentResponse(saved));
