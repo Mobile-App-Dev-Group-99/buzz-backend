@@ -41,8 +41,8 @@ services:
 
   auth-service:
     build:
-      context: ./auth-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./auth-service/Dockerfile
     container_name: auth-service
     depends_on:
       postgres:
@@ -64,8 +64,8 @@ services:
 
   attendance-service:
     build:
-      context: ./attendance-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./attendance-service/Dockerfile
     container_name: attendance-service
     depends_on:
       postgres:
@@ -79,7 +79,7 @@ services:
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
       SPRING_JPA_HIBERNATE_DDL_AUTO: validate
-      AUTH_SERVICE_URL: http://auth-service:8081
+      AUTH_SERVICE_URL: auth-service:8081
       ATTENDANCE_ARRIVAL_CUTOFF: "08:00"
       SERVER_PORT: 8082
     ports:
@@ -89,8 +89,8 @@ services:
 
   safety-service:
     build:
-      context: ./safety-service
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./safety-service/Dockerfile
     container_name: safety-service
     depends_on:
       postgres:
@@ -104,7 +104,7 @@ services:
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}
       SPRING_JPA_HIBERNATE_DDL_AUTO: validate
-      AUTH_SERVICE_URL: http://auth-service:8081
+      AUTH_SERVICE_URL: auth-service:8081
       SERVER_PORT: 8083
     ports:
       - "8083:8083"

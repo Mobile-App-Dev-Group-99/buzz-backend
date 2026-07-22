@@ -8,6 +8,7 @@ COPY attendance-service/pom.xml .
 RUN chmod +x mvnw && ./mvnw -B dependency:go-offline
 
 COPY attendance-service/src ./src
+COPY db/migration ./src/main/resources/db/migration
 RUN ./mvnw -B clean package -DskipTests
 
 # --- Runtime stage ---

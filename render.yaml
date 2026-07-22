@@ -1,19 +1,17 @@
 services:
   - type: web
     name: auth-service
-    runtime: image
-    image:
-      url: https://github.com/coach-panda07/buzz-backend.git
-      buildFilter:
-        type: path
-        paths:
-          - auth-service/**
+    runtime: docker
     dockerfilePath: ./auth-service/Dockerfile
     envVars:
       - key: SPRING_DATASOURCE_URL
-        value: jdbc:postgresql://buzz-db:5432/buzzdb
+        fromDatabase:
+          name: buzz-db
+          property: connectionString
       - key: SPRING_DATASOURCE_USERNAME
-        value: postgres
+        fromDatabase:
+          name: buzz-db
+          property: user
       - key: SPRING_DATASOURCE_PASSWORD
         fromDatabase:
           name: buzz-db
@@ -28,25 +26,25 @@ services:
 
   - type: web
     name: attendance-service
-    runtime: image
-    image:
-      url: https://github.com/coach-panda07/buzz-backend.git
-      buildFilter:
-        type: path
-        paths:
-          - attendance-service/**
+    runtime: docker
     dockerfilePath: ./attendance-service/Dockerfile
     envVars:
       - key: SPRING_DATASOURCE_URL
-        value: jdbc:postgresql://buzz-db:5432/buzzdb
+        fromDatabase:
+          name: buzz-db
+          property: connectionString
       - key: SPRING_DATASOURCE_USERNAME
-        value: postgres
+        fromDatabase:
+          name: buzz-db
+          property: user
       - key: SPRING_DATASOURCE_PASSWORD
         fromDatabase:
           name: buzz-db
           property: password
       - key: AUTH_SERVICE_URL
-        value: http://auth-service.internal
+        fromService:
+          name: auth-service
+          property: hostport
       - key: ATTENDANCE_ARRIVAL_CUTOFF
         value: "08:00"
       - key: SPRING_JPA_HIBERNATE_DDL_AUTO
@@ -55,25 +53,25 @@ services:
 
   - type: web
     name: safety-service
-    runtime: image
-    image:
-      url: https://github.com/coach-panda07/buzz-backend.git
-      buildFilter:
-        type: path
-        paths:
-          - safety-service/**
+    runtime: docker
     dockerfilePath: ./safety-service/Dockerfile
     envVars:
       - key: SPRING_DATASOURCE_URL
-        value: jdbc:postgresql://buzz-db:5432/buzzdb
+        fromDatabase:
+          name: buzz-db
+          property: connectionString
       - key: SPRING_DATASOURCE_USERNAME
-        value: postgres
+        fromDatabase:
+          name: buzz-db
+          property: user
       - key: SPRING_DATASOURCE_PASSWORD
         fromDatabase:
           name: buzz-db
           property: password
       - key: AUTH_SERVICE_URL
-        value: http://auth-service.internal
+        fromService:
+          name: auth-service
+          property: hostport
       - key: SPRING_JPA_HIBERNATE_DDL_AUTO
         value: validate
     healthCheckPath: /actuator/health
@@ -82,4 +80,3 @@ databases:
   - name: buzz-db
     plan: free
     databaseName: buzzdb
-    user: postgres
