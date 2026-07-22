@@ -8,6 +8,7 @@ COPY safety-service/pom.xml .
 RUN chmod +x mvnw && ./mvnw -B dependency:go-offline
 
 COPY safety-service/src ./src
+COPY db/migration ./src/main/resources/db/migration
 RUN ./mvnw -B clean package -DskipTests
 
 # --- Runtime stage ---
