@@ -18,3 +18,8 @@ Thumbs.db
 
 # Maven
 .mvn/repository/
+
+# Node (used locally for DB scripts)
+node_modules/
+package.json
+package-lock.json
