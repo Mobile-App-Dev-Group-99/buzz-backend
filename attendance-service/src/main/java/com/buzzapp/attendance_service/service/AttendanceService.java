@@ -20,8 +20,6 @@ public class AttendanceService {
     private final StudentRepository studentRepository;
     private final TeacherClassRepository teacherClassRepository;
     private final UserRepository userRepository;
-    private final TeacherClassRepository teacherClassRepository;
-    private final UserRepository userRepository;
 
     @Value("${attendance.arrival.cutoff}")
     private String arrivalCutoff;
