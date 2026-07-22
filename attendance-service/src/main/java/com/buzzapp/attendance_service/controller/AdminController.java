@@ -8,6 +8,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -19,6 +22,8 @@ public class AdminController {
     private final StudentRepository studentRepository;
     private final ParentRepository parentRepository;
     private final StudentParentRepository studentParentRepository;
+    private final TeacherClassRepository teacherClassRepository;
+    private final UserRepository userRepository;
 
     @PostMapping("/student")
     public ResponseEntity<StudentResponse> createStudent(
@@ -92,6 +97,73 @@ public class AdminController {
                 .map(this::toParentResponse)
                 .toList();
         return ResponseEntity.ok(parents);
+    }
+
+    @GetMapping("/teachers")
+    public ResponseEntity<List<Map<String, Object>>> listTeachers(Authentication auth) {
+        Long schoolId = (Long) auth.getPrincipal();
+        List<User> teachers = userRepository.findAll().stream()
+                .filter(u -> "TEACHER".equals(u.getRole()) && schoolId.equals(u.getSchoolId()))
+                .toList();
+
+        List<TeacherClass> assignments = teacherClassRepository.findBySchoolId(schoolId);
+        Map<Long, String> classByTeacher = new HashMap<>();
+        for (TeacherClass tc : assignments) {
+            classByTeacher.put(tc.getTeacherUserId(), tc.getClassName());
+        }
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (User t : teachers) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("id", t.getId());
+            item.put("username", t.getUsername());
+            item.put("email", t.getEmail());
+            item.put("className", classByTeacher.getOrDefault(t.getId(), null));
+            result.add(item);
+        }
+        return ResponseEntity.ok(result);
+    }
+
+    @PostMapping("/teacher-class")
+    public ResponseEntity<?> assignTeacherClass(
+            @RequestBody AssignTeacherClassRequest request,
+            Authentication auth) {
+        Long schoolId = (Long) auth.getPrincipal();
+
+        User teacher = userRepository.findById(request.getTeacherUserId()).orElse(null);
+        if (teacher == null || !"TEACHER".equals(teacher.getRole())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Teacher not found"));
+        }
+        if (!schoolId.equals(teacher.getSchoolId())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Teacher not in this school"));
+        }
+
+        teacherClassRepository.deleteByTeacherUserIdAndSchoolId(request.getTeacherUserId(), schoolId);
+
+        TeacherClass tc = new TeacherClass();
+        tc.setTeacherUserId(request.getTeacherUserId());
+        tc.setClassName(request.getClassName());
+        tc.setSchoolId(schoolId);
+        teacherClassRepository.save(tc);
+
+        return ResponseEntity.ok(Map.of("message", "Teacher assigned to " + request.getClassName()));
+    }
+
+    @GetMapping("/teacher-class/{className}")
+    public ResponseEntity<?> getTeacherForClass(
+            @PathVariable String className,
+            Authentication auth) {
+        Long schoolId = (Long) auth.getPrincipal();
+        return teacherClassRepository.findByClassNameAndSchoolId(className, schoolId)
+                .map(tc -> {
+                    User teacher = userRepository.findById(tc.getTeacherUserId()).orElse(null);
+                    Map<String, Object> body = new LinkedHashMap<>();
+                    body.put("teacherUserId", tc.getTeacherUserId());
+                    body.put("teacherName", teacher != null ? teacher.getUsername() : "Unknown");
+                    body.put("className", tc.getClassName());
+                    return ResponseEntity.ok((Object) body);
+                })
+                .orElse(ResponseEntity.ok(Map.of("className", className, "teacherUserId", null, "teacherName", null)));
     }
 
     private StudentResponse toStudentResponse(Student s) {
