@@ -23,7 +23,6 @@ services:
         value: "86400000"
       - key: SPRING_JPA_HIBERNATE_DDL_AUTO
         value: validate
-    healthCheckPath: /actuator/health
 
   - type: web
     name: attendance-service
@@ -51,7 +50,6 @@ services:
         value: "08:00"
       - key: SPRING_JPA_HIBERNATE_DDL_AUTO
         value: validate
-    healthCheckPath: /actuator/health
 
   - type: web
     name: safety-service
@@ -77,7 +75,6 @@ services:
           property: hostport
       - key: SPRING_JPA_HIBERNATE_DDL_AUTO
         value: validate
-    healthCheckPath: /actuator/health
 
 databases:
   - name: buzz-db
