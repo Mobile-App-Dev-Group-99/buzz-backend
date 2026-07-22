@@ -18,6 +18,10 @@ public class AttendanceService {
 
     private final AttendanceEventRepository attendanceEventRepository;
     private final StudentRepository studentRepository;
+    private final TeacherClassRepository teacherClassRepository;
+    private final UserRepository userRepository;
+    private final TeacherClassRepository teacherClassRepository;
+    private final UserRepository userRepository;
 
     @Value("${attendance.arrival.cutoff}")
     private String arrivalCutoff;
@@ -219,22 +223,22 @@ public class AttendanceService {
                     .findByStudentIdAndSchoolIdAndScannedAtBetweenOrderByScannedAtDesc(
                             student.getId(), schoolId, startOfDay, endOfDay);
 
+            StudentAttendanceEntry entry = new StudentAttendanceEntry();
+            entry.setStudentId(student.getId());
+            entry.setStudentName(student.getFirstName() + " " + student.getLastName());
+
             if (!events.isEmpty()) {
                 AttendanceEvent latest = events.get(0);
-                StudentAttendanceEntry entry = new StudentAttendanceEntry();
                 entry.setScanType(latest.getScanType());
                 entry.setStatus(latest.getStatus());
                 entry.setLate(latest.isLate());
                 entry.setScannedAt(latest.getScannedAt());
                 entry.setGate(latest.getGate());
-                result.add(entry);
             } else {
-                // Student hasn't scanned today — treat as absent
-                StudentAttendanceEntry entry = new StudentAttendanceEntry();
                 entry.setStatus(AttendanceStatus.ABSENT);
                 entry.setLate(false);
-                result.add(entry);
             }
+            result.add(entry);
         }
         return result;
     }
@@ -354,5 +358,111 @@ public class AttendanceService {
         WeeklyCalendarResponse response = new WeeklyCalendarResponse();
         response.setWeek(week);
         return response;
+    }
+
+    // ─── 10. POST /api/attendance/manual ─────────────────────────────────────
+
+    public ScanResponse markManualAttendance(ManualAttendanceRequest request, Long schoolId, String teacherEmail) {
+        User teacher = userRepository.findByEmail(teacherEmail)
+                .orElseThrow(() -> new RuntimeException("Teacher not found"));
+
+        Optional<TeacherClass> tc = teacherClassRepository.findByTeacherUserIdAndSchoolId(teacher.getId(), schoolId);
+        if (tc.isEmpty()) {
+            throw new RuntimeException("You are not assigned to any class");
+        }
+
+        Student student = studentRepository.findById(request.getStudentId())
+                .orElseThrow(() -> new RuntimeException("Student not found"));
+
+        if (!student.getSchoolId().equals(schoolId)) {
+            throw new RuntimeException("Student does not belong to this school");
+        }
+        if (!tc.get().getClassName().equals(student.getClassName())) {
+            throw new RuntimeException("Student is not in your class");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        AttendanceStatus status;
+        boolean isLate = false;
+
+        switch (request.getStatus().toUpperCase()) {
+            case "PRESENT":
+                status = AttendanceStatus.ARRIVED;
+                break;
+            case "LATE":
+                status = AttendanceStatus.LATE;
+                isLate = true;
+                break;
+            case "ABSENT":
+                status = AttendanceStatus.ABSENT;
+                break;
+            default:
+                throw new RuntimeException("Invalid status: " + request.getStatus());
+        }
+
+        AttendanceEvent event = new AttendanceEvent();
+        event.setStudentId(student.getId());
+        event.setSchoolId(schoolId);
+        event.setScanType(ScanType.ARRIVAL);
+        event.setScannedAt(now);
+        event.setLate(isLate);
+        event.setGate("Manual");
+        event.setStatus(status);
+
+        AttendanceEvent saved = attendanceEventRepository.save(event);
+
+        ScanResponse response = new ScanResponse();
+        response.setId(saved.getId());
+        response.setStudentId(student.getId());
+        response.setStudentName(student.getFirstName() + " " + student.getLastName());
+        response.setScanType(saved.getScanType());
+        response.setStatus(saved.getStatus());
+        response.setLate(saved.isLate());
+        response.setScannedAt(saved.getScannedAt());
+        response.setGate(saved.getGate());
+
+        return response;
+    }
+
+    // ─── 11. GET /api/attendance/class/{className}/roster ────────────────────
+
+    public List<Map<String, Object>> getClassRoster(String className, Long schoolId) {
+        LocalDate today = LocalDate.now();
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime endOfDay = today.atTime(LocalTime.MAX);
+
+        List<Student> students = studentRepository.findByClassNameAndSchoolId(className, schoolId);
+
+        List<StudentAttendanceEntry> todayEntries = getClassToday(className, schoolId);
+
+        Map<Long, StudentAttendanceEntry> entryByStudent = new LinkedHashMap<>();
+        for (Student s : students) {
+            for (StudentAttendanceEntry e : todayEntries) {
+                if (e.getStudentId() != null && e.getStudentId().equals(s.getId())) {
+                    entryByStudent.put(s.getId(), e);
+                    break;
+                }
+            }
+        }
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Student s : students) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("id", s.getId());
+            item.put("firstName", s.getFirstName());
+            item.put("lastName", s.getLastName());
+            item.put("className", s.getClassName());
+
+            StudentAttendanceEntry todayEntry = entryByStudent.get(s.getId());
+            if (todayEntry != null && todayEntry.getStatus() != null) {
+                item.put("todayStatus", todayEntry.getStatus().name());
+                item.put("todayLate", todayEntry.isLate());
+            } else {
+                item.put("todayStatus", "NOT_MARKED");
+                item.put("todayLate", false);
+            }
+            result.add(item);
+        }
+        return result;
     }
 }

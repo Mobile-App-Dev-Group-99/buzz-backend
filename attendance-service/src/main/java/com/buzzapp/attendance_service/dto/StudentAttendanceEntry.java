@@ -8,6 +8,8 @@ import java.time.LocalDateTime;
 
 @Data
 public class StudentAttendanceEntry {
+    private Long studentId;
+    private String studentName;
     private ScanType scanType;
     private AttendanceStatus status;
     private boolean late;

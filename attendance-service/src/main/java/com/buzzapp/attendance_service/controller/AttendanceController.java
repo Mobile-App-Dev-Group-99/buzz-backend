@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/attendance")
@@ -20,6 +21,18 @@ public class AttendanceController {
                                              Authentication auth) {
         Long schoolId = (Long) auth.getPrincipal();
         return ResponseEntity.ok(attendanceService.recordScan(request, schoolId));
+    }
+
+    @PostMapping("/manual")
+    public ResponseEntity<?> manualMark(@RequestBody ManualAttendanceRequest request,
+                                        Authentication auth) {
+        Long schoolId = (Long) auth.getPrincipal();
+        String email = (String) auth.getCredentials();
+        try {
+            return ResponseEntity.ok(attendanceService.markManualAttendance(request, schoolId, email));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
     }
 
     @GetMapping("/summary/today")
@@ -51,6 +64,13 @@ public class AttendanceController {
                                                                    Authentication auth) {
         Long schoolId = (Long) auth.getPrincipal();
         return ResponseEntity.ok(attendanceService.getClassToday(className, schoolId));
+    }
+
+    @GetMapping("/class/{className}/roster")
+    public ResponseEntity<List<Map<String, Object>>> classRoster(@PathVariable String className,
+                                                                 Authentication auth) {
+        Long schoolId = (Long) auth.getPrincipal();
+        return ResponseEntity.ok(attendanceService.getClassRoster(className, schoolId));
     }
 
     @GetMapping("/student/{studentId}")
