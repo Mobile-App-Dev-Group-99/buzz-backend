@@ -78,4 +78,28 @@ public class AuthController {
     public ResponseEntity<OnboardSchoolResponse> onboardSchool(@RequestBody OnboardSchoolRequest request) {
         return ResponseEntity.ok(authService.onboardSchool(request));
     }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        try {
+            String tempPassword = authService.forgotPassword(request.getEmail());
+            return ResponseEntity.ok(Map.of(
+                    "message", "Password has been reset. Contact your school admin for the temporary password.",
+                    "hint", tempPassword
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/admin/reset-password")
+    public ResponseEntity<?> adminResetPassword(@RequestBody ResetPasswordRequest request,
+                                                Authentication auth) {
+        try {
+            authService.adminResetPassword(request.getEmail(), request.getNewPassword(), auth);
+            return ResponseEntity.ok(Map.of("message", "Password reset successfully"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
 }

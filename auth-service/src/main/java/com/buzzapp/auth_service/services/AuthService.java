@@ -68,4 +68,31 @@ public class AuthService {
 
         return new OnboardSchoolResponse(token, admin.getRole().name(), admin.getEmail(), school.getId());
     }
+
+    public String forgotPassword(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("No account found with this email"));
+
+        String tempPassword = "BuzzApp" + (int)(Math.random() * 9000 + 1000);
+        user.setPassword(passwordEncoder.encode(tempPassword));
+        userRepository.save(user);
+
+        return tempPassword;
+    }
+
+    public void adminResetPassword(String email, String newPassword, org.springframework.security.core.Authentication auth) {
+        String adminEmail = (String) auth.getPrincipal();
+        User admin = userRepository.findByEmail(adminEmail)
+                .orElseThrow(() -> new RuntimeException("Admin not found"));
+
+        User target = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+
+        if (!admin.getSchool_id().equals(target.getSchool_id())) {
+            throw new RuntimeException("Cannot reset password for users outside your school");
+        }
+
+        target.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(target);
+    }
 }
