@@ -89,6 +89,14 @@ public class ExeatService {
                 .toList();
     }
 
+    public List<ExeatResponse> getExeatsBySchool(Long schoolId) {
+        return exeatRepository
+                .findBySchoolIdOrderByCreatedAtDesc(schoolId)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     private Exeat getOwnedExeat(Long exeatId, Long schoolId) {
         Exeat exeat = exeatRepository.findById(exeatId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Exeat not found"));
