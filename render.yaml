@@ -3,6 +3,7 @@ services:
     name: auth-service
     runtime: docker
     dockerfilePath: ./auth-service/Dockerfile
+    initialStartupDelay: 180
     envVars:
       - key: SPRING_DATASOURCE_URL
         fromDatabase:
@@ -28,6 +29,7 @@ services:
     name: attendance-service
     runtime: docker
     dockerfilePath: ./attendance-service/Dockerfile
+    initialStartupDelay: 180
     envVars:
       - key: SPRING_DATASOURCE_URL
         fromDatabase:
@@ -55,6 +57,7 @@ services:
     name: safety-service
     runtime: docker
     dockerfilePath: ./safety-service/Dockerfile
+    initialStartupDelay: 180
     envVars:
       - key: SPRING_DATASOURCE_URL
         fromDatabase:
