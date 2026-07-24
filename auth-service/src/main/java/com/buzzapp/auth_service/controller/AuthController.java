@@ -86,10 +86,9 @@ public class AuthController {
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest request) {
         try {
-            String tempPassword = authService.forgotPassword(request.getEmail());
+            authService.forgotPassword(request.getEmail());
             return ResponseEntity.ok(Map.of(
-                    "message", "Password has been reset. Contact your school admin for the temporary password.",
-                    "hint", tempPassword
+                    "message", "A temporary password has been sent to your email. Contact your school admin if you need assistance."
             ));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));

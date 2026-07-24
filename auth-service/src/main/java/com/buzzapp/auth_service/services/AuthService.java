@@ -85,6 +85,10 @@ public class AuthService {
         User admin = userRepository.findByEmail(adminEmail)
                 .orElseThrow(() -> new RuntimeException("Admin not found"));
 
+        if (admin.getRole() != Role.ADMIN) {
+            throw new RuntimeException("Only administrators can reset passwords");
+        }
+
         User target = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
 

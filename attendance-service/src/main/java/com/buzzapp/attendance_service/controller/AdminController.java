@@ -134,8 +134,12 @@ public class AdminController {
 
     @GetMapping("/parents")
     public ResponseEntity<List<ParentResponse>> listParents(Authentication auth) {
+        Long schoolId = (Long) auth.getPrincipal();
+        List<User> schoolUsers = userRepository.findBySchoolId(schoolId);
+        java.util.Set<Long> userIds = schoolUsers.stream().map(User::getId).collect(java.util.stream.Collectors.toSet());
         List<ParentResponse> parents = parentRepository.findAll()
                 .stream()
+                .filter(p -> p.getUserId() != null && userIds.contains(p.getUserId()))
                 .map(this::toParentResponse)
                 .toList();
         return ResponseEntity.ok(parents);
@@ -144,9 +148,7 @@ public class AdminController {
     @GetMapping("/teachers")
     public ResponseEntity<List<Map<String, Object>>> listTeachers(Authentication auth) {
         Long schoolId = (Long) auth.getPrincipal();
-        List<User> teachers = userRepository.findAll().stream()
-                .filter(u -> "TEACHER".equals(u.getRole()) && schoolId.equals(u.getSchoolId()))
-                .toList();
+        List<User> teachers = userRepository.findByRoleAndSchoolId("TEACHER", schoolId);
 
         List<TeacherClass> assignments = teacherClassRepository.findBySchoolId(schoolId);
         Map<Long, String> classByTeacher = new HashMap<>();
