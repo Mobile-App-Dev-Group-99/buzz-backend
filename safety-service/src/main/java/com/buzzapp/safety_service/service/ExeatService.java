@@ -3,7 +3,9 @@ package com.buzzapp.safety_service.service;
 import com.buzzapp.safety_service.dto.*;
 import com.buzzapp.safety_service.model.Exeat;
 import com.buzzapp.safety_service.model.ExeatStatus;
+import com.buzzapp.safety_service.model.StudentParent;
 import com.buzzapp.safety_service.repository.ExeatRepository;
+import com.buzzapp.safety_service.repository.StudentParentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,7 @@ import java.util.List;
 public class ExeatService {
 
     private final ExeatRepository exeatRepository;
+    private final StudentParentRepository studentParentRepository;
     private final NotificationService notificationService;
 
     public ExeatResponse createExeat(CreateExeatRequest request, Long schoolId) {
@@ -43,9 +46,8 @@ public class ExeatService {
         exeat.setApprovedBy(request.getApprovedBy());
         Exeat saved = exeatRepository.save(exeat);
 
-        // TODO: parentId isn't resolvable from safety-service yet (no access to
-        // students_parents). Wire this once that lookup exists:
-        // notificationService.notify(parentId, "Exeat approved for your child.", schoolId);
+        notifyParents(exeat.getStudentId(),
+                "Exeat approved for student #" + exeat.getStudentId(), schoolId);
 
         return toResponse(saved);
     }
@@ -61,7 +63,12 @@ public class ExeatService {
         exeat.setStatus(ExeatStatus.DENIED);
         exeat.setApprovedBy(request.getApprovedBy());
 
-        return toResponse(exeatRepository.save(exeat));
+        Exeat saved = exeatRepository.save(exeat);
+
+        notifyParents(exeat.getStudentId(),
+                "Exeat denied for student #" + exeat.getStudentId(), schoolId);
+
+        return toResponse(saved);
     }
 
     public ExeatResponse recordReturn(Long exeatId, ReturnExeatRequest request, Long schoolId) {
@@ -76,7 +83,8 @@ public class ExeatService {
         exeat.setStatus(ExeatStatus.RETURNED);
         Exeat saved = exeatRepository.save(exeat);
 
-        // TODO: same parentId gap as approveExeat — wire notification once resolvable.
+        notifyParents(exeat.getStudentId(),
+                "Student #" + exeat.getStudentId() + " has returned from exeat", schoolId);
 
         return toResponse(saved);
     }
@@ -95,6 +103,17 @@ public class ExeatService {
                 .stream()
                 .map(this::toResponse)
                 .toList();
+    }
+
+    private void notifyParents(Long studentId, String message, Long schoolId) {
+        List<StudentParent> links = studentParentRepository.findByIdStudentId(studentId);
+        for (StudentParent link : links) {
+            Long parentId = link.getId().getParentId();
+            try {
+                notificationService.notify(parentId, message, schoolId);
+            } catch (Exception ignored) {
+            }
+        }
     }
 
     private Exeat getOwnedExeat(Long exeatId, Long schoolId) {

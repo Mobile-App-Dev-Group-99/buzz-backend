@@ -1,10 +1,10 @@
 package com.buzzapp.auth_service.services;
 
 import com.buzzapp.auth_service.dto.*;
-import com.buzzapp.auth_service.model.Role;
-import com.buzzapp.auth_service.model.School;
-import com.buzzapp.auth_service.model.User;
+import com.buzzapp.auth_service.model.*;
 import com.buzzapp.auth_service.repository.SchoolRepository;
+import com.buzzapp.auth_service.repository.StudentRepository;
+import com.buzzapp.auth_service.repository.ParentRepository;
 import com.buzzapp.auth_service.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -16,13 +16,18 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final SchoolRepository schoolRepository;
+    private final StudentRepository studentRepository;
+    private final ParentRepository parentRepository;
 
     public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
-                       JwtService jwtService, SchoolRepository schoolRepository) {
+                       JwtService jwtService, SchoolRepository schoolRepository,
+                       StudentRepository studentRepository, ParentRepository parentRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.schoolRepository = schoolRepository;
+        this.studentRepository = studentRepository;
+        this.parentRepository = parentRepository;
     }
 
     public LoginResponse login(LoginRequest request) {
@@ -45,7 +50,28 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setRole(Role.valueOf(request.getRole()));
         user.setSchool_id(request.getSchoolId());
-        userRepository.save(user);
+        User savedUser = userRepository.save(user);
+
+        if (savedUser.getRole() == Role.STUDENT) {
+            Student student = new Student();
+            student.setSchoolId(request.getSchoolId());
+            student.setUserId(savedUser.getId());
+            student.setFirstName(request.getFirstName() != null ? request.getFirstName() : request.getUsername());
+            student.setLastName(request.getLastName() != null ? request.getLastName() : "");
+            student.setClassName(request.getClassName());
+            student.setGender(request.getGender());
+            student.setStudentType(request.getStudentType());
+            studentRepository.save(student);
+        } else if (savedUser.getRole() == Role.PARENT) {
+            Parent parent = new Parent();
+            parent.setUserId(savedUser.getId());
+            parent.setFirstName(request.getFirstName() != null ? request.getFirstName() : request.getUsername());
+            parent.setLastName(request.getLastName() != null ? request.getLastName() : "");
+            parent.setPhone(request.getPhone());
+            parent.setEmail(request.getEmail());
+            parentRepository.save(parent);
+        }
+
         return "User registered successfully";
     }
 
