@@ -3,6 +3,8 @@ package com.buzzapp.auth_service.model;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.time.LocalDate;
+
 @Entity
 @Table(name = "students")
 @Data
@@ -27,7 +29,7 @@ public class Student {
     private String className;
 
     @Column(name = "date_of_birth")
-    private String dateOfBirth;
+    private LocalDate dateOfBirth;
 
     @Column(name = "gender")
     private String gender;
