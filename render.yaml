@@ -16,9 +16,17 @@ services:
           name: buzz-db
           property: password
       - key: JWT_SECRET
-        sync: false
+        value: "BuzzApp2026SecretKeyForCodeQuestKNUST"
       - key: JWT_EXPIRATION
         value: "86400000"
+      - key: MAIL_HOST
+        value: "smtp.gmail.com"
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
       - key: SPRING_JPA_HIBERNATE_DDL_AUTO
         value: validate
 
@@ -42,6 +50,8 @@ services:
         fromService:
           name: auth-service
           property: hostport
+      - key: JWT_SECRET
+        value: "BuzzApp2026SecretKeyForCodeQuestKNUST"
       - key: ATTENDANCE_ARRIVAL_CUTOFF
         value: "08:00"
       - key: SPRING_JPA_HIBERNATE_DDL_AUTO
@@ -67,6 +77,8 @@ services:
         fromService:
           name: auth-service
           property: hostport
+      - key: JWT_SECRET
+        value: "BuzzApp2026SecretKeyForCodeQuestKNUST"
       - key: SPRING_JPA_HIBERNATE_DDL_AUTO
         value: validate
 

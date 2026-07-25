@@ -19,16 +19,19 @@ public class AuthService {
     private final SchoolRepository schoolRepository;
     private final StudentRepository studentRepository;
     private final ParentRepository parentRepository;
+    private final EmailService emailService;
 
     public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
                        JwtService jwtService, SchoolRepository schoolRepository,
-                       StudentRepository studentRepository, ParentRepository parentRepository) {
+                       StudentRepository studentRepository, ParentRepository parentRepository,
+                       EmailService emailService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.schoolRepository = schoolRepository;
         this.studentRepository = studentRepository;
         this.parentRepository = parentRepository;
+        this.emailService = emailService;
     }
 
     public LoginResponse login(LoginRequest request) {
@@ -107,7 +110,9 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(tempPassword));
         userRepository.save(user);
 
-        return tempPassword;
+        emailService.sendTempPassword(email, tempPassword);
+
+        return "A temporary password has been sent to your email";
     }
 
     @Transactional
