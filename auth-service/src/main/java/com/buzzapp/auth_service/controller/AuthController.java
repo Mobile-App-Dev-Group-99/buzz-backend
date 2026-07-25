@@ -6,6 +6,7 @@ import com.buzzapp.auth_service.repository.UserRepository;
 import com.buzzapp.auth_service.services.AuthService;
 import com.buzzapp.auth_service.services.JwtService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -24,7 +25,7 @@ public class AuthController {
     private final UserRepository userRepository;
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         try {
             LoginResponse response = authService.login(request);
             return ResponseEntity.ok(response);
@@ -34,7 +35,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<String> register(@Valid @RequestBody RegisterRequest request) {
         String message = authService.register(request);
         return ResponseEntity.ok(message);
     }
@@ -79,12 +80,12 @@ public class AuthController {
     }
 
     @PostMapping("/onboard-school")
-    public ResponseEntity<OnboardSchoolResponse> onboardSchool(@RequestBody OnboardSchoolRequest request) {
+    public ResponseEntity<OnboardSchoolResponse> onboardSchool(@Valid @RequestBody OnboardSchoolRequest request) {
         return ResponseEntity.ok(authService.onboardSchool(request));
     }
 
     @PostMapping("/forgot-password")
-    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         try {
             authService.forgotPassword(request.getEmail());
             return ResponseEntity.ok(Map.of(
@@ -96,7 +97,7 @@ public class AuthController {
     }
 
     @PostMapping("/admin/reset-password")
-    public ResponseEntity<?> adminResetPassword(@RequestBody ResetPasswordRequest request,
+    public ResponseEntity<?> adminResetPassword(@Valid @RequestBody ResetPasswordRequest request,
                                                 Authentication auth) {
         try {
             authService.adminResetPassword(request.getEmail(), request.getNewPassword(), auth);

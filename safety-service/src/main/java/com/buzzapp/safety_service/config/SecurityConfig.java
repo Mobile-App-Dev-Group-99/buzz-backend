@@ -31,6 +31,14 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers("/api/exeat/create").hasAnyRole("TEACHER", "PARENT")
+                        .requestMatchers("/api/exeat/{id}/approve").hasAnyRole("ADMIN", "TEACHER")
+                        .requestMatchers("/api/exeat/{id}/deny").hasAnyRole("ADMIN", "TEACHER")
+                        .requestMatchers("/api/exeat/{id}/return").hasAnyRole("ADMIN", "TEACHER")
+                        .requestMatchers("/api/exeat/school").hasAnyRole("ADMIN", "TEACHER")
+                        .requestMatchers("/api/exeat/student/**").authenticated()
+                        .requestMatchers("/api/notification/send").hasAnyRole("ADMIN", "TEACHER")
+                        .requestMatchers("/api/notification/parent/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

@@ -8,6 +8,7 @@ import com.buzzapp.auth_service.repository.ParentRepository;
 import com.buzzapp.auth_service.repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AuthService {
@@ -40,6 +41,7 @@ public class AuthService {
         return new LoginResponse(user.getEmail(), token, user.getRole().toString(), user.getSchool_id());
     }
 
+    @Transactional
     public String register(RegisterRequest request) {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("Email already registered");
@@ -75,6 +77,7 @@ public class AuthService {
         return "User registered successfully";
     }
 
+    @Transactional
     public OnboardSchoolResponse onboardSchool(OnboardSchoolRequest request) {
         School school = new School();
         school.setName(request.getSchoolName());
@@ -95,6 +98,7 @@ public class AuthService {
         return new OnboardSchoolResponse(token, admin.getRole().name(), admin.getEmail(), school.getId());
     }
 
+    @Transactional
     public String forgotPassword(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("No account found with this email"));
@@ -106,6 +110,7 @@ public class AuthService {
         return tempPassword;
     }
 
+    @Transactional
     public void adminResetPassword(String email, String newPassword, org.springframework.security.core.Authentication auth) {
         String adminEmail = (String) auth.getPrincipal();
         User admin = userRepository.findByEmail(adminEmail)

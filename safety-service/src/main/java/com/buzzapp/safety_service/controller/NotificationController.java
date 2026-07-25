@@ -2,6 +2,7 @@ package com.buzzapp.safety_service.controller;
 
 import com.buzzapp.safety_service.dto.*;
 import com.buzzapp.safety_service.service.NotificationService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -18,7 +19,7 @@ public class NotificationController {
 
     @PostMapping("/send")
     public ResponseEntity<NotificationResponse> send(
-            @RequestBody SendNotificationRequest request,
+            @Valid @RequestBody SendNotificationRequest request,
             Authentication authentication) {
         Long schoolId = (Long) authentication.getPrincipal();
         return ResponseEntity.ok(notificationService.sendNotification(request, schoolId));

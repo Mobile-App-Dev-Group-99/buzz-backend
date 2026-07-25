@@ -2,6 +2,7 @@ package com.buzzapp.attendance_service.controller;
 
 import com.buzzapp.attendance_service.dto.*;
 import com.buzzapp.attendance_service.service.AttendanceService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -17,14 +18,14 @@ public class AttendanceController {
     private final AttendanceService attendanceService;
 
     @PostMapping("/scan")
-    public ResponseEntity<ScanResponse> scan(@RequestBody ScanRequest request,
+    public ResponseEntity<ScanResponse> scan(@Valid @RequestBody ScanRequest request,
                                              Authentication auth) {
         Long schoolId = (Long) auth.getPrincipal();
         return ResponseEntity.ok(attendanceService.recordScan(request, schoolId));
     }
 
     @PostMapping("/manual")
-    public ResponseEntity<?> manualMark(@RequestBody ManualAttendanceRequest request,
+    public ResponseEntity<?> manualMark(@Valid @RequestBody ManualAttendanceRequest request,
                                         Authentication auth) {
         Long schoolId = (Long) auth.getPrincipal();
         String email = (String) auth.getCredentials();

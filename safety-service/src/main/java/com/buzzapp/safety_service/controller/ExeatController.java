@@ -2,6 +2,7 @@ package com.buzzapp.safety_service.controller;
 
 import com.buzzapp.safety_service.dto.*;
 import com.buzzapp.safety_service.service.ExeatService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -18,7 +19,7 @@ public class ExeatController {
 
     @PostMapping("/create")
     public ResponseEntity<ExeatResponse> create(
-            @RequestBody CreateExeatRequest request,
+            @Valid @RequestBody CreateExeatRequest request,
             Authentication authentication) {
         Long schoolId = (Long) authentication.getPrincipal();
         return ResponseEntity.ok(exeatService.createExeat(request, schoolId));

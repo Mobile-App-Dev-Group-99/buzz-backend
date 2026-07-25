@@ -3,6 +3,7 @@ package com.buzzapp.attendance_service.controller;
 import com.buzzapp.attendance_service.dto.*;
 import com.buzzapp.attendance_service.model.*;
 import com.buzzapp.attendance_service.repository.*;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -29,7 +30,7 @@ public class AdminController {
 
     @PostMapping("/student")
     public ResponseEntity<?> createStudent(
-            @RequestBody CreateStudentRequest request,
+            @Valid @RequestBody CreateStudentRequest request,
             Authentication auth) {
         Long schoolId = (Long) auth.getPrincipal();
 
@@ -70,7 +71,7 @@ public class AdminController {
 
     @PostMapping("/parent")
     public ResponseEntity<?> createParent(
-            @RequestBody CreateParentRequest request,
+            @Valid @RequestBody CreateParentRequest request,
             Authentication auth) {
         String email = request.getEmail();
         String password = request.getPassword();
