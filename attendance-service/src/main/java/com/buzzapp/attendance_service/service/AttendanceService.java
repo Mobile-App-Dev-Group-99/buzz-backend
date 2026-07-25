@@ -6,6 +6,7 @@ import com.buzzapp.attendance_service.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.*;
 import java.time.format.TextStyle;
@@ -26,6 +27,7 @@ public class AttendanceService {
 
     // ─── 1. POST /api/attendance/scan ────────────────────────────────────────
 
+    @Transactional
     public ScanResponse recordScan(ScanRequest request, Long schoolId) {
         Student student = studentRepository.findById(request.getStudentId())
                 .orElseThrow(() -> new RuntimeException("Student not found: " + request.getStudentId()));
@@ -361,6 +363,7 @@ public class AttendanceService {
 
     // ─── 10. POST /api/attendance/manual ─────────────────────────────────────
 
+    @Transactional
     public ScanResponse markManualAttendance(ManualAttendanceRequest request, Long schoolId, String teacherEmail) {
         User teacher = userRepository.findByEmail(teacherEmail)
                 .orElseThrow(() -> new RuntimeException("Teacher not found"));

@@ -10,6 +10,7 @@ import com.buzzapp.attendance_service.repository.BiometricTemplateRepository;
 import com.buzzapp.attendance_service.repository.StudentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
@@ -20,6 +21,7 @@ public class BiometricService {
     private final BiometricTemplateRepository biometricTemplateRepository;
     private final StudentRepository studentRepository;
 
+    @Transactional
     public BiometricRegisterResponse registerTemplate(BiometricRegisterRequest request, Long schoolId) {
         Student student = studentRepository.findById(request.getStudentId())
                 .filter(s -> s.getSchoolId().equals(schoolId))
@@ -45,6 +47,7 @@ public class BiometricService {
         return response;
     }
 
+    @Transactional(readOnly = true)
     public BiometricVerifyResponse verifyTemplate(BiometricVerifyRequest request, Long schoolId) {
         BiometricTemplate template = biometricTemplateRepository.findBySlotId(request.getSlotId())
                 .orElseThrow(() -> new RuntimeException("No biometric template found for this scanner slot"));

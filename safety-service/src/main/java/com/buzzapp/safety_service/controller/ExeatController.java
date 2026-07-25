@@ -65,4 +65,13 @@ public class ExeatController {
         Long schoolId = (Long) authentication.getPrincipal();
         return ResponseEntity.ok(exeatService.getExeatsByStudent(studentId, schoolId));
     }
+
+    @PutMapping("/{id}/status")
+    public ResponseEntity<ExeatResponse> updateStatus(
+            @PathVariable Long id,
+            @Valid @RequestBody ExeatStatusUpdateRequest request,
+            Authentication authentication) {
+        Long schoolId = (Long) authentication.getPrincipal();
+        return ResponseEntity.ok(exeatService.updateExeatStatus(id, request, schoolId));
+    }
 }

@@ -105,6 +105,31 @@ public class ExeatService {
                 .toList();
     }
 
+    public ExeatResponse updateExeatStatus(Long exeatId, ExeatStatusUpdateRequest request, Long schoolId) {
+        Exeat exeat = getOwnedExeat(exeatId, schoolId);
+
+        ExeatStatus newStatus;
+        try {
+            newStatus = ExeatStatus.valueOf(request.getStatus().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Invalid status: " + request.getStatus());
+        }
+
+        if (exeat.getStatus() != ExeatStatus.PENDING) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Exeat is " + exeat.getStatus() + " and cannot be updated");
+        }
+
+        exeat.setStatus(newStatus);
+        Exeat saved = exeatRepository.save(exeat);
+
+        notifyParents(exeat.getStudentId(),
+                "Exeat status updated to " + newStatus + " for student #" + exeat.getStudentId(), schoolId);
+
+        return toResponse(saved);
+    }
+
     private void notifyParents(Long studentId, String message, Long schoolId) {
         List<StudentParent> links = studentParentRepository.findByIdStudentId(studentId);
         for (StudentParent link : links) {

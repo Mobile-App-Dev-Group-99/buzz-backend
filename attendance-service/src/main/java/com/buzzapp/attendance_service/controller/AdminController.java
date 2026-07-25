@@ -5,6 +5,9 @@ import com.buzzapp.attendance_service.model.*;
 import com.buzzapp.attendance_service.repository.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -124,23 +127,31 @@ public class AdminController {
     }
 
     @GetMapping("/students")
-    public ResponseEntity<List<StudentResponse>> listStudents(Authentication auth) {
+    public ResponseEntity<Page<StudentResponse>> listStudents(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size,
+            Authentication auth) {
         Long schoolId = (Long) auth.getPrincipal();
-        List<StudentResponse> students = studentRepository.findBySchoolId(schoolId)
-                .stream()
-                .map(this::toStudentResponse)
-                .toList();
+        Pageable pageable = PageRequest.of(page, size);
+        Page<StudentResponse> students = studentRepository.findBySchoolId(schoolId, pageable)
+                .map(this::toStudentResponse);
         return ResponseEntity.ok(students);
     }
 
     @GetMapping("/parents")
-    public ResponseEntity<List<ParentResponse>> listParents(Authentication auth) {
+    public ResponseEntity<List<ParentResponse>> listParents(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size,
+            Authentication auth) {
         Long schoolId = (Long) auth.getPrincipal();
         List<User> schoolUsers = userRepository.findBySchoolId(schoolId);
         java.util.Set<Long> userIds = schoolUsers.stream().map(User::getId).collect(java.util.stream.Collectors.toSet());
+        int start = page * size;
         List<ParentResponse> parents = parentRepository.findAll()
                 .stream()
                 .filter(p -> p.getUserId() != null && userIds.contains(p.getUserId()))
+                .skip(start)
+                .limit(size)
                 .map(this::toParentResponse)
                 .toList();
         return ResponseEntity.ok(parents);
@@ -233,12 +244,96 @@ public class AdminController {
             @PathVariable String className,
             Authentication auth) {
         Long schoolId = (Long) auth.getPrincipal();
-        List<StudentResponse> students = studentRepository.findBySchoolId(schoolId)
+        List<StudentResponse> students = studentRepository.findByClassNameAndSchoolId(className, schoolId)
                 .stream()
-                .filter(s -> className.equals(s.getClassName()))
                 .map(this::toStudentResponse)
                 .toList();
         return ResponseEntity.ok(students);
+    }
+
+    @PutMapping("/student/{studentId}")
+    public ResponseEntity<?> updateStudent(
+            @PathVariable Long studentId,
+            @Valid @RequestBody StudentUpdateRequest request,
+            Authentication auth) {
+        Long schoolId = (Long) auth.getPrincipal();
+        Student student = studentRepository.findById(studentId).orElse(null);
+        if (student == null || !schoolId.equals(student.getSchoolId())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Student not found"));
+        }
+        student.setFirstName(request.getFirstName());
+        student.setLastName(request.getLastName());
+        if (request.getClassName() != null) {
+            student.setClassName(request.getClassName());
+        }
+        if (request.getGender() != null) {
+            student.setGender(Gender.valueOf(request.getGender()));
+        }
+        if (request.getStudentType() != null) {
+            student.setStudentType(StudentType.valueOf(request.getStudentType()));
+        }
+        Student saved = studentRepository.save(student);
+        return ResponseEntity.ok(toStudentResponse(saved));
+    }
+
+    @DeleteMapping("/student/{studentId}")
+    public ResponseEntity<?> deleteStudent(
+            @PathVariable Long studentId,
+            Authentication auth) {
+        Long schoolId = (Long) auth.getPrincipal();
+        Student student = studentRepository.findById(studentId).orElse(null);
+        if (student == null || !schoolId.equals(student.getSchoolId())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Student not found"));
+        }
+        if (student.getUserId() != null) {
+            userRepository.deleteById(student.getUserId());
+        }
+        studentRepository.deleteById(studentId);
+        return ResponseEntity.ok(Map.of("message", "Student deleted successfully"));
+    }
+
+    @PutMapping("/parent/{parentId}")
+    public ResponseEntity<?> updateParent(
+            @PathVariable Long parentId,
+            @Valid @RequestBody ParentUpdateRequest request,
+            Authentication auth) {
+        Long schoolId = (Long) auth.getPrincipal();
+        Parent parent = parentRepository.findById(parentId).orElse(null);
+        if (parent == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Parent not found"));
+        }
+        if (parent.getUserId() == null || !schoolId.equals(userRepository.findById(parent.getUserId()).map(User::getSchoolId).orElse(null))) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Parent not found"));
+        }
+        parent.setFirstName(request.getFirstName());
+        parent.setLastName(request.getLastName());
+        if (request.getPhone() != null) {
+            parent.setPhone(request.getPhone());
+        }
+        if (request.getEmail() != null) {
+            parent.setEmail(request.getEmail());
+        }
+        Parent saved = parentRepository.save(parent);
+        return ResponseEntity.ok(toParentResponse(saved));
+    }
+
+    @DeleteMapping("/parent/{parentId}")
+    public ResponseEntity<?> deleteParent(
+            @PathVariable Long parentId,
+            Authentication auth) {
+        Long schoolId = (Long) auth.getPrincipal();
+        Parent parent = parentRepository.findById(parentId).orElse(null);
+        if (parent == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Parent not found"));
+        }
+        if (parent.getUserId() == null || !schoolId.equals(userRepository.findById(parent.getUserId()).map(User::getSchoolId).orElse(null))) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Parent not found"));
+        }
+        if (parent.getUserId() != null) {
+            userRepository.deleteById(parent.getUserId());
+        }
+        parentRepository.deleteById(parentId);
+        return ResponseEntity.ok(Map.of("message", "Parent deleted successfully"));
     }
 
     private StudentResponse toStudentResponse(Student s) {
