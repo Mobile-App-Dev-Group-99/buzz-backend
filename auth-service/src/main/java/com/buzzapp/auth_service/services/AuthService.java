@@ -10,8 +10,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
+
 @Service
 public class AuthService {
+
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+    private static final String TEMP_PASSWORD_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -106,11 +111,16 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("No account found with this email"));
 
-        String tempPassword = "BuzzApp" + (int)(Math.random() * 9000 + 1000);
-        user.setPassword(passwordEncoder.encode(tempPassword));
+        StringBuilder tempPassword = new StringBuilder("Buzz");
+        for (int i = 0; i < 8; i++) {
+            tempPassword.append(TEMP_PASSWORD_CHARS.charAt(SECURE_RANDOM.nextInt(TEMP_PASSWORD_CHARS.length())));
+        }
+        String generatedPassword = tempPassword.toString();
+
+        user.setPassword(passwordEncoder.encode(generatedPassword));
         userRepository.save(user);
 
-        emailService.sendTempPassword(email, tempPassword);
+        emailService.sendTempPassword(email, generatedPassword);
 
         return "A temporary password has been sent to your email";
     }

@@ -298,7 +298,8 @@ public class AttendanceService {
         // Current streak — consecutive present days going back from today
         int streak = 0;
         LocalDate check = LocalDate.now();
-        while (true) {
+        LocalDate termStartLocal = termStart.toLocalDate();
+        while (check.isAfter(termStartLocal) || check.equals(termStartLocal)) {
             if (check.getDayOfWeek() == DayOfWeek.SATURDAY ||
                     check.getDayOfWeek() == DayOfWeek.SUNDAY) {
                 check = check.minusDays(1);
