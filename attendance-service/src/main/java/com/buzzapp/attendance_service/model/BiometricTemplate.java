@@ -19,6 +19,8 @@ public class BiometricTemplate {
     @Column(nullable = false)
     private String template;
 
+    private Integer slotId;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 }

@@ -8,5 +8,6 @@ import java.time.LocalDateTime;
 public class BiometricRegisterResponse {
     private Long id;
     private Long studentId;
+    private Integer slotId;
     private LocalDateTime createdAt;
 }

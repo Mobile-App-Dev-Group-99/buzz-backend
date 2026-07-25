@@ -2,6 +2,8 @@ package com.buzzapp.attendance_service.controller;
 
 import com.buzzapp.attendance_service.dto.BiometricRegisterRequest;
 import com.buzzapp.attendance_service.dto.BiometricRegisterResponse;
+import com.buzzapp.attendance_service.dto.BiometricVerifyRequest;
+import com.buzzapp.attendance_service.dto.BiometricVerifyResponse;
 import com.buzzapp.attendance_service.service.BiometricService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -20,5 +22,12 @@ public class BiometricController {
                                                               Authentication auth) {
         Long schoolId = (Long) auth.getPrincipal();
         return ResponseEntity.ok(biometricService.registerTemplate(request, schoolId));
+    }
+
+    @PostMapping("/verify")
+    public ResponseEntity<BiometricVerifyResponse> verify(@RequestBody BiometricVerifyRequest request,
+                                                          Authentication auth) {
+        Long schoolId = (Long) auth.getPrincipal();
+        return ResponseEntity.ok(biometricService.verifyTemplate(request, schoolId));
     }
 }
