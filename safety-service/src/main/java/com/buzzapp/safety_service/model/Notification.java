@@ -23,6 +23,8 @@ public class Notification {
     @Column(nullable = false)
     private String message;
 
+    private String type;
+
     @Column(nullable = false)
     private boolean isRead;
 

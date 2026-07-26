@@ -40,6 +40,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/exeat/{id}/status").hasRole("ADMIN")
                         .requestMatchers("/api/notification/send").hasAnyRole("ADMIN", "TEACHER")
                         .requestMatchers("/api/notification/parent/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/notification/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

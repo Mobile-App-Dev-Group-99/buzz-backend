@@ -50,7 +50,13 @@ public class ExeatService {
         exeat.setStatus(ExeatStatus.PENDING);
         exeat.setCreatedAt(LocalDateTime.now());
 
-        return toResponse(exeatRepository.save(exeat));
+        Exeat saved = exeatRepository.save(exeat);
+
+        String studentName = student.getFirstName() + " " + student.getLastName();
+        notifyParents(student.getStudentId(),
+                studentName + " has submitted an exeat request: " + exeat.getReason(), schoolId, "EXEAT_CREATED");
+
+        return toResponse(saved);
     }
 
     public ExeatResponse approveExeat(Long exeatId, ApproveExeatRequest request, Long schoolId) {
@@ -65,8 +71,9 @@ public class ExeatService {
         exeat.setApprovedBy(request.getApprovedBy());
         Exeat saved = exeatRepository.save(exeat);
 
+        String studentName = resolveStudentName(exeat.getStudentId());
         notifyParents(exeat.getStudentId(),
-                "Exeat approved for student #" + exeat.getStudentId(), schoolId);
+                studentName + "'s exeat has been approved", schoolId, "EXEAT_APPROVED");
 
         return toResponse(saved);
     }
@@ -84,8 +91,9 @@ public class ExeatService {
 
         Exeat saved = exeatRepository.save(exeat);
 
+        String studentName = resolveStudentName(exeat.getStudentId());
         notifyParents(exeat.getStudentId(),
-                "Exeat denied for student #" + exeat.getStudentId(), schoolId);
+                studentName + "'s exeat has been denied", schoolId, "EXEAT_DENIED");
 
         return toResponse(saved);
     }
@@ -102,8 +110,9 @@ public class ExeatService {
         exeat.setStatus(ExeatStatus.RETURNED);
         Exeat saved = exeatRepository.save(exeat);
 
+        String studentName = resolveStudentName(exeat.getStudentId());
         notifyParents(exeat.getStudentId(),
-                "Student #" + exeat.getStudentId() + " has returned from exeat", schoolId);
+                studentName + " has returned from exeat", schoolId, "EXEAT_RETURNED");
 
         return toResponse(saved);
     }
@@ -151,18 +160,24 @@ public class ExeatService {
         exeat.setStatus(newStatus);
         Exeat saved = exeatRepository.save(exeat);
 
+        String studentName = resolveStudentName(exeat.getStudentId());
         notifyParents(exeat.getStudentId(),
-                "Exeat status updated to " + newStatus + " for student #" + exeat.getStudentId(), schoolId);
+                studentName + " exeat status updated to " + newStatus, schoolId, "EXEAT_STATUS");
 
         return toResponse(saved);
     }
 
-    private void notifyParents(Long studentId, String message, Long schoolId) {
+    private String resolveStudentName(Long studentId) {
+        Student student = studentRepository.findById(studentId).orElse(null);
+        return student != null ? student.getFirstName() + " " + student.getLastName() : "Student #" + studentId;
+    }
+
+    private void notifyParents(Long studentId, String message, Long schoolId, String type) {
         List<StudentParent> links = studentParentRepository.findByStudentId(studentId);
         for (StudentParent link : links) {
             Long parentId = link.getId().getParentId();
             try {
-                notificationService.notify(parentId, message, schoolId);
+                notificationService.notify(parentId, message, schoolId, type);
             } catch (Exception e) {
                 log.error("Failed to notify parent {} for student {}: {}", parentId, studentId, e.getMessage());
             }

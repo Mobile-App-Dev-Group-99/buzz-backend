@@ -5,6 +5,7 @@ import com.buzzapp.safety_service.model.Notification;
 import com.buzzapp.safety_service.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,14 +21,11 @@ public class NotificationService {
         notification.setParentId(request.getParentId());
         notification.setSchoolId(schoolId);
         notification.setMessage(request.getMessage());
+        notification.setType(request.getType());
         notification.setRead(false);
         notification.setSentAt(LocalDateTime.now());
 
         Notification saved = notificationRepository.save(notification);
-
-        // TODO: fire FCM push here once the Firebase service account JSON is available.
-        // For now this only persists the notification record.
-
         return toResponse(saved);
     }
 
@@ -39,12 +37,29 @@ public class NotificationService {
                 .toList();
     }
 
-    // Package-private helper so ExeatService can trigger a notification
-    // without building a SendNotificationRequest by hand each time.
+    public long getUnreadCount(Long parentId, Long schoolId) {
+        return notificationRepository.countUnread(parentId, schoolId);
+    }
+
+    @Transactional
+    public void markRead(Long id) {
+        notificationRepository.markReadById(id);
+    }
+
+    @Transactional
+    public void markAllRead(Long parentId, Long schoolId) {
+        notificationRepository.markAllRead(parentId, schoolId);
+    }
+
     NotificationResponse notify(Long parentId, String message, Long schoolId) {
+        return notify(parentId, message, schoolId, null);
+    }
+
+    NotificationResponse notify(Long parentId, String message, Long schoolId, String type) {
         SendNotificationRequest request = new SendNotificationRequest();
         request.setParentId(parentId);
         request.setMessage(message);
+        request.setType(type);
         return sendNotification(request, schoolId);
     }
 
@@ -54,6 +69,7 @@ public class NotificationService {
         response.setParentId(n.getParentId());
         response.setSchoolId(n.getSchoolId());
         response.setMessage(n.getMessage());
+        response.setType(n.getType());
         response.setRead(n.isRead());
         response.setSentAt(n.getSentAt());
         return response;

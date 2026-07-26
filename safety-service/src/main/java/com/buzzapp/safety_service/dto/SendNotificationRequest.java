@@ -11,4 +11,6 @@ public class SendNotificationRequest {
 
     @NotBlank(message = "Message is required")
     private String message;
+
+    private String type;
 }

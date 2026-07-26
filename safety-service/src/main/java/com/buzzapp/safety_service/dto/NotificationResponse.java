@@ -9,6 +9,7 @@ public class NotificationResponse {
     private Long parentId;
     private Long schoolId;
     private String message;
+    private String type;
     private boolean isRead;
     private LocalDateTime sentAt;
 }

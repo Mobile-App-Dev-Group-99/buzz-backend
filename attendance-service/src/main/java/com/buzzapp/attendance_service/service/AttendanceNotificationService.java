@@ -45,6 +45,7 @@ public class AttendanceNotificationService {
                 notification.setParentId(parentId);
                 notification.setSchoolId(schoolId);
                 notification.setMessage(message);
+                notification.setType(status.name());
                 notification.setRead(false);
                 notification.setSentAt(LocalDateTime.now());
                 notificationRepository.save(notification);
