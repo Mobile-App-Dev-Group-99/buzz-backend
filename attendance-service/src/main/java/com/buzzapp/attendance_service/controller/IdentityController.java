@@ -87,7 +87,7 @@ public class IdentityController {
         parentResponse.put("firstName", parent.getFirstName());
         parentResponse.put("lastName", parent.getLastName());
 
-        List<StudentParent> links = studentParentRepository.findByIdParentId(parent.getId());
+        List<StudentParent> links = studentParentRepository.findByParentId(parent.getId());
         List<Map<String, Object>> children = new ArrayList<>();
         for (StudentParent link : links) {
             Student student = studentRepository.findById(link.getId().getStudentId()).orElse(null);

@@ -29,7 +29,7 @@ public class AttendanceNotificationService {
 
     @Async
     public void notifyParents(Student student, AttendanceStatus status, Long schoolId) {
-        List<StudentParent> links = studentParentRepository.findByIdStudentId(student.getId());
+        List<StudentParent> links = studentParentRepository.findByStudentId(student.getId());
         if (links.isEmpty()) return;
 
         String studentName = student.getFirstName() + " " + student.getLastName();

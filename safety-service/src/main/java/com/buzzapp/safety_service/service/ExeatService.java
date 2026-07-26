@@ -158,7 +158,7 @@ public class ExeatService {
     }
 
     private void notifyParents(Long studentId, String message, Long schoolId) {
-        List<StudentParent> links = studentParentRepository.findByIdStudentId(studentId);
+        List<StudentParent> links = studentParentRepository.findByStudentId(studentId);
         for (StudentParent link : links) {
             Long parentId = link.getId().getParentId();
             try {
