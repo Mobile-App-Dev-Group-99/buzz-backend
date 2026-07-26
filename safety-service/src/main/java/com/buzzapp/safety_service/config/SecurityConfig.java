@@ -31,7 +31,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
-                        .requestMatchers("/api/exeat/create").hasAnyRole("TEACHER", "PARENT")
+                        .requestMatchers("/api/exeat/create").hasAnyRole("STUDENT", "TEACHER", "PARENT")
                         .requestMatchers("/api/exeat/{id}/approve").hasAnyRole("ADMIN", "TEACHER")
                         .requestMatchers("/api/exeat/{id}/deny").hasAnyRole("ADMIN", "TEACHER")
                         .requestMatchers("/api/exeat/{id}/return").hasAnyRole("ADMIN", "TEACHER")
