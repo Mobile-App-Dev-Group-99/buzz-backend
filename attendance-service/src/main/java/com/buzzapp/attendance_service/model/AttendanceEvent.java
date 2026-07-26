@@ -17,7 +17,7 @@ public class AttendanceEvent {
     @Column(nullable = false)
     private Long studentId;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
     private ScanType scanType;
 
@@ -27,11 +27,13 @@ public class AttendanceEvent {
     @Column(nullable = false, name = "is_late")
     private boolean isLate;
 
+    @Column(length = 50)
     private String gate;
 
     @Column(nullable = false)
     private Long schoolId;
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 20)
     private AttendanceStatus status;
 }

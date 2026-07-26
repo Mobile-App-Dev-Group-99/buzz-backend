@@ -120,8 +120,15 @@ public class AttendanceService {
         List<AttendanceEvent> events = attendanceEventRepository
                 .findBySchoolIdAndScannedAtBetweenOrderByScannedAtDesc(schoolId, startOfDay, endOfDay);
 
+        List<Long> studentIds = events.stream()
+                .map(AttendanceEvent::getStudentId)
+                .distinct()
+                .toList();
+        Map<Long, Student> studentMap = studentRepository.findByIdIn(studentIds).stream()
+                .collect(Collectors.toMap(Student::getId, s -> s));
+
         return events.stream().map(e -> {
-            Student student = studentRepository.findById(e.getStudentId()).orElse(null);
+            Student student = studentMap.get(e.getStudentId());
             LiveFeedEntry entry = new LiveFeedEntry();
             entry.setStudentName(student != null
                     ? student.getFirstName() + " " + student.getLastName() : "Unknown");

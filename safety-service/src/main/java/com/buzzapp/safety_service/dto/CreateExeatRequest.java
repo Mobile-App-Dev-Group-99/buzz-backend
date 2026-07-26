@@ -13,5 +13,7 @@ public class CreateExeatRequest {
     @NotBlank(message = "Reason is required")
     private String reason;
 
+    private String notes;
+
     private LocalDateTime expectedReturn;
 }

@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -226,9 +227,17 @@ public class AdminController {
     public ResponseEntity<List<Map<String, Object>>> listTeacherClasses(Authentication auth) {
         Long schoolId = (Long) auth.getPrincipal();
         List<TeacherClass> classes = teacherClassRepository.findBySchoolId(schoolId);
+
+        List<Long> teacherIds = classes.stream()
+                .map(TeacherClass::getTeacherUserId)
+                .distinct()
+                .toList();
+        Map<Long, User> teacherMap = userRepository.findByIdIn(teacherIds).stream()
+                .collect(java.util.stream.Collectors.toMap(User::getId, u -> u));
+
         List<Map<String, Object>> result = new ArrayList<>();
         for (TeacherClass tc : classes) {
-            User teacher = userRepository.findById(tc.getTeacherUserId()).orElse(null);
+            User teacher = teacherMap.get(tc.getTeacherUserId());
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("id", tc.getId());
             item.put("teacherUserId", tc.getTeacherUserId());
@@ -277,6 +286,7 @@ public class AdminController {
     }
 
     @DeleteMapping("/student/{studentId}")
+    @Transactional
     public ResponseEntity<?> deleteStudent(
             @PathVariable Long studentId,
             Authentication auth) {
@@ -285,6 +295,7 @@ public class AdminController {
         if (student == null || !schoolId.equals(student.getSchoolId())) {
             return ResponseEntity.badRequest().body(Map.of("message", "Student not found"));
         }
+        studentParentRepository.deleteByStudentId(studentId);
         if (student.getUserId() != null) {
             userRepository.deleteById(student.getUserId());
         }
@@ -318,6 +329,7 @@ public class AdminController {
     }
 
     @DeleteMapping("/parent/{parentId}")
+    @Transactional
     public ResponseEntity<?> deleteParent(
             @PathVariable Long parentId,
             Authentication auth) {
@@ -329,6 +341,7 @@ public class AdminController {
         if (parent.getUserId() == null || !schoolId.equals(userRepository.findById(parent.getUserId()).map(User::getSchoolId).orElse(null))) {
             return ResponseEntity.badRequest().body(Map.of("message", "Parent not found"));
         }
+        studentParentRepository.deleteByParentId(parentId);
         if (parent.getUserId() != null) {
             userRepository.deleteById(parent.getUserId());
         }

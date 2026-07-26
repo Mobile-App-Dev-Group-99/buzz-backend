@@ -37,6 +37,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/exeat/{id}/return").hasAnyRole("ADMIN", "TEACHER")
                         .requestMatchers("/api/exeat/school").hasAnyRole("ADMIN", "TEACHER")
                         .requestMatchers("/api/exeat/student/**").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/exeat/{id}/status").hasRole("ADMIN")
                         .requestMatchers("/api/notification/send").hasAnyRole("ADMIN", "TEACHER")
                         .requestMatchers("/api/notification/parent/**").authenticated()
                         .anyRequest().authenticated()

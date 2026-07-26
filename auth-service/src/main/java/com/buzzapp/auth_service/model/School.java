@@ -22,6 +22,6 @@ public class School {
     private String location;
 
     @Enumerated(EnumType.STRING)
-    @Column
+    @Column(length = 10)
     private SchoolLevel level;
 }

@@ -23,13 +23,15 @@ public class Exeat {
     @Column(nullable = false)
     private String reason;
 
+    private String notes;
+
     private Long approvedBy;
 
     private LocalDateTime expectedReturn;
 
     private LocalDateTime actualReturn;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
     private ExeatStatus status;
 

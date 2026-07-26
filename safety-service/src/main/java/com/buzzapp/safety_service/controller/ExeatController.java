@@ -55,7 +55,7 @@ public class ExeatController {
     @GetMapping("/school")
     public ResponseEntity<List<ExeatResponse>> getSchoolExeats(Authentication authentication) {
         Long schoolId = (Long) authentication.getPrincipal();
-        return ResponseEntity.ok(exeatService.getExeatsBySchool(schoolId));
+        return ResponseEntity.ok(exeatService.getExeatsBySchoolResolved(schoolId));
     }
 
     @GetMapping("/student/{studentId}")
@@ -63,7 +63,7 @@ public class ExeatController {
             @PathVariable Long studentId,
             Authentication authentication) {
         Long schoolId = (Long) authentication.getPrincipal();
-        return ResponseEntity.ok(exeatService.getExeatsByStudent(studentId, schoolId));
+        return ResponseEntity.ok(exeatService.getExeatsByStudentResolved(studentId, schoolId));
     }
 
     @PutMapping("/{id}/status")

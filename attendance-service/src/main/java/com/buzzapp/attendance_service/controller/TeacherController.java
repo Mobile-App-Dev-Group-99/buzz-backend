@@ -231,4 +231,42 @@ public class TeacherController {
 
         return ResponseEntity.ok(Map.of("message", "Exeat denied", "status", "DENIED"));
     }
+
+    @PutMapping("/api/teacher/exeat/{id}/return")
+    public ResponseEntity<?> recordReturn(@PathVariable Long id, Authentication auth) {
+        Long schoolId = (Long) auth.getPrincipal();
+        String email = (String) auth.getCredentials();
+
+        User teacher = userRepository.findByEmail(email).orElse(null);
+        if (teacher == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Teacher not found"));
+        }
+
+        Optional<TeacherClass> tc = teacherClassRepository.findByTeacherUserIdAndSchoolId(teacher.getId(), schoolId);
+        if (tc.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("message", "You are not assigned to any class"));
+        }
+
+        Exeat exeat = exeatRepository.findById(id).orElse(null);
+        if (exeat == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Exeat not found"));
+        }
+        if (!exeat.getSchoolId().equals(schoolId)) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Access denied"));
+        }
+        if (exeat.getStatus() != ExeatStatus.APPROVED) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Exeat must be APPROVED before recording return"));
+        }
+
+        Student student = studentRepository.findById(exeat.getStudentId()).orElse(null);
+        if (student == null || !tc.get().getClassName().equals(student.getClassName())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Student is not in your class"));
+        }
+
+        exeat.setStatus(ExeatStatus.RETURNED);
+        exeat.setActualReturn(LocalDateTime.now());
+        exeatRepository.save(exeat);
+
+        return ResponseEntity.ok(Map.of("message", "Return recorded", "status", "RETURNED"));
+    }
 }

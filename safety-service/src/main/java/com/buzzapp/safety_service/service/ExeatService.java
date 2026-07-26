@@ -3,30 +3,49 @@ package com.buzzapp.safety_service.service;
 import com.buzzapp.safety_service.dto.*;
 import com.buzzapp.safety_service.model.Exeat;
 import com.buzzapp.safety_service.model.ExeatStatus;
+import com.buzzapp.safety_service.model.Student;
 import com.buzzapp.safety_service.model.StudentParent;
+import com.buzzapp.safety_service.model.User;
 import com.buzzapp.safety_service.repository.ExeatRepository;
 import com.buzzapp.safety_service.repository.StudentParentRepository;
+import com.buzzapp.safety_service.repository.StudentRepository;
+import com.buzzapp.safety_service.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ExeatService {
 
     private final ExeatRepository exeatRepository;
     private final StudentParentRepository studentParentRepository;
+    private final StudentRepository studentRepository;
+    private final UserRepository userRepository;
     private final NotificationService notificationService;
 
     public ExeatResponse createExeat(CreateExeatRequest request, Long schoolId) {
+        Student student = studentRepository.findById(request.getStudentId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Student not found"));
+
+        if (!student.getSchoolId().equals(schoolId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Student does not belong to this school");
+        }
+
         Exeat exeat = new Exeat();
         exeat.setStudentId(request.getStudentId());
         exeat.setSchoolId(schoolId);
         exeat.setReason(request.getReason());
+        exeat.setNotes(request.getNotes());
         exeat.setExpectedReturn(request.getExpectedReturn());
         exeat.setStatus(ExeatStatus.PENDING);
         exeat.setCreatedAt(LocalDateTime.now());
@@ -116,9 +135,17 @@ public class ExeatService {
                     "Invalid status: " + request.getStatus());
         }
 
-        if (exeat.getStatus() != ExeatStatus.PENDING) {
+        // State machine validation
+        ExeatStatus current = exeat.getStatus();
+        boolean validTransition = switch (current) {
+            case PENDING -> newStatus == ExeatStatus.APPROVED || newStatus == ExeatStatus.DENIED;
+            case APPROVED -> newStatus == ExeatStatus.RETURNED || newStatus == ExeatStatus.OVERDUE;
+            default -> false;
+        };
+
+        if (!validTransition) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Exeat is " + exeat.getStatus() + " and cannot be updated");
+                    "Cannot transition from " + current + " to " + newStatus);
         }
 
         exeat.setStatus(newStatus);
@@ -136,7 +163,8 @@ public class ExeatService {
             Long parentId = link.getId().getParentId();
             try {
                 notificationService.notify(parentId, message, schoolId);
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                log.error("Failed to notify parent {} for student {}: {}", parentId, studentId, e.getMessage());
             }
         }
     }
@@ -146,7 +174,6 @@ public class ExeatService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Exeat not found"));
 
         if (!exeat.getSchoolId().equals(schoolId)) {
-            // Treat cross-school access as "not found" — never leak existence across tenants.
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Exeat not found");
         }
 
@@ -159,11 +186,79 @@ public class ExeatService {
         response.setStudentId(e.getStudentId());
         response.setSchoolId(e.getSchoolId());
         response.setReason(e.getReason());
+        response.setNotes(e.getNotes());
         response.setApprovedBy(e.getApprovedBy());
         response.setExpectedReturn(e.getExpectedReturn());
         response.setActualReturn(e.getActualReturn());
         response.setStatus(e.getStatus());
         response.setCreatedAt(e.getCreatedAt());
+
+        // Batch-resolve student names
+        Student student = studentRepository.findById(e.getStudentId()).orElse(null);
+        if (student != null) {
+            response.setStudentName(student.getFirstName() + " " + student.getLastName());
+            response.setStudentClass(student.getClassName());
+        } else {
+            response.setStudentName("Student #" + e.getStudentId());
+            response.setStudentClass("—");
+        }
+
+        // Batch-resolve approver name
+        if (e.getApprovedBy() != null) {
+            User approver = userRepository.findById(e.getApprovedBy()).orElse(null);
+            response.setApprovedByName(approver != null ? approver.getUsername() : null);
+        }
+
         return response;
+    }
+
+    // Batch-optimized version for list responses
+    public List<ExeatResponse> getExeatsBySchoolResolved(Long schoolId) {
+        List<Exeat> exeats = exeatRepository.findBySchoolIdOrderByCreatedAtDesc(schoolId);
+        return resolveAll(exeats);
+    }
+
+    public List<ExeatResponse> getExeatsByStudentResolved(Long studentId, Long schoolId) {
+        List<Exeat> exeats = exeatRepository.findByStudentIdAndSchoolIdOrderByCreatedAtDesc(studentId, schoolId);
+        return resolveAll(exeats);
+    }
+
+    private List<ExeatResponse> resolveAll(List<Exeat> exeats) {
+        if (exeats.isEmpty()) return List.of();
+
+        Set<Long> studentIds = exeats.stream().map(Exeat::getStudentId).collect(Collectors.toSet());
+        Set<Long> approverIds = exeats.stream().filter(e -> e.getApprovedBy() != null)
+                .map(Exeat::getApprovedBy).collect(Collectors.toSet());
+
+        Map<Long, Student> studentMap = studentRepository.findByIdIn(List.copyOf(studentIds)).stream()
+                .collect(Collectors.toMap(Student::getId, s -> s));
+        Map<Long, User> approverMap = approverIds.isEmpty() ? Map.of() :
+                userRepository.findByIdIn(List.copyOf(approverIds)).stream()
+                        .collect(Collectors.toMap(User::getId, u -> u));
+
+        return exeats.stream().map(e -> {
+            ExeatResponse response = new ExeatResponse();
+            response.setId(e.getId());
+            response.setStudentId(e.getStudentId());
+            response.setSchoolId(e.getSchoolId());
+            response.setReason(e.getReason());
+            response.setNotes(e.getNotes());
+            response.setApprovedBy(e.getApprovedBy());
+            response.setExpectedReturn(e.getExpectedReturn());
+            response.setActualReturn(e.getActualReturn());
+            response.setStatus(e.getStatus());
+            response.setCreatedAt(e.getCreatedAt());
+
+            Student student = studentMap.get(e.getStudentId());
+            response.setStudentName(student != null ? student.getFirstName() + " " + student.getLastName() : "Student #" + e.getStudentId());
+            response.setStudentClass(student != null ? student.getClassName() : "—");
+
+            if (e.getApprovedBy() != null) {
+                User approver = approverMap.get(e.getApprovedBy());
+                response.setApprovedByName(approver != null ? approver.getUsername() : null);
+            }
+
+            return response;
+        }).toList();
     }
 }
