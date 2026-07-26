@@ -21,6 +21,7 @@ public class AttendanceService {
     private final StudentRepository studentRepository;
     private final TeacherClassRepository teacherClassRepository;
     private final UserRepository userRepository;
+    private final AttendanceNotificationService attendanceNotificationService;
 
     @Value("${attendance.arrival.cutoff}")
     private String arrivalCutoff;
@@ -59,6 +60,8 @@ public class AttendanceService {
         event.setStatus(status);
 
         AttendanceEvent saved = attendanceEventRepository.save(event);
+
+        attendanceNotificationService.notifyParents(student, status, schoolId);
 
         ScanResponse response = new ScanResponse();
         response.setId(saved.getId());
@@ -412,6 +415,10 @@ public class AttendanceService {
         event.setStatus(status);
 
         AttendanceEvent saved = attendanceEventRepository.save(event);
+
+        if (status != AttendanceStatus.ABSENT) {
+            attendanceNotificationService.notifyParents(student, status, schoolId);
+        }
 
         ScanResponse response = new ScanResponse();
         response.setId(saved.getId());
