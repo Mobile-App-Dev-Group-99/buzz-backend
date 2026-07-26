@@ -53,7 +53,7 @@ public class ExeatService {
         Exeat saved = exeatRepository.save(exeat);
 
         String studentName = student.getFirstName() + " " + student.getLastName();
-        notifyParents(student.getStudentId(),
+        notifyParents(student.getId(),
                 studentName + " has submitted an exeat request: " + exeat.getReason(), schoolId, "EXEAT_CREATED");
 
         return toResponse(saved);
