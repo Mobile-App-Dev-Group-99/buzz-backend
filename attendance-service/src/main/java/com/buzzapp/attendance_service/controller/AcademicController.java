@@ -83,7 +83,9 @@ public class AcademicController {
         for (Map.Entry<String, List<AcademicResult>> entry : byTerm.entrySet()) {
             String[] parts = entry.getKey().split("\\|");
             String termName = parts[0];
-            int year = Integer.parseInt(parts[1]);
+            int year = parts.length > 1 && !"null".equals(parts[1])
+                    ? Integer.parseInt(parts[1])
+                    : 0;
 
             AcademicResultResponse.TermResultGroup termGroup =
                     new AcademicResultResponse.TermResultGroup();
