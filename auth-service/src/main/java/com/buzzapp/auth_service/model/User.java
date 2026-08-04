@@ -1,5 +1,6 @@
 package com.buzzapp.auth_service.model;
 
+import com.buzzapp.auth_service.model.Role;
 import jakarta.persistence.*;
 import lombok.Data;
 
