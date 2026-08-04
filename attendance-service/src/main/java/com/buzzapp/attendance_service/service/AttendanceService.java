@@ -76,6 +76,31 @@ public class AttendanceService {
         return response;
     }
 
+    // ─── 1b. POST /api/attendance/self-checkin ───────────────────────────────
+
+    @Transactional
+    public ScanResponse selfCheckIn(String email, Long schoolId) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found for this account"));
+
+        if (!"STUDENT".equalsIgnoreCase(user.getRole())) {
+            throw new RuntimeException("Only students can self check in");
+        }
+
+        Student student = studentRepository.findByUserId(user.getId())
+                .orElseThrow(() -> new RuntimeException("Student record not found for this account"));
+
+        if (!student.getSchoolId().equals(schoolId)) {
+            throw new RuntimeException("Student does not belong to this school");
+        }
+
+        ScanRequest request = new ScanRequest();
+        request.setStudentId(student.getId());
+        request.setScanType(ScanType.ARRIVAL);
+        request.setGate("Phone");
+        return recordScan(request, schoolId);
+    }
+
     // ─── 2. GET /api/attendance/summary/today ────────────────────────────────
 
     public TodaySummaryResponse getTodaySummary(Long schoolId) {
