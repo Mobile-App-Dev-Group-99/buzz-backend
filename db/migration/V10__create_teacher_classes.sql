@@ -1,4 +1,4 @@
-CREATE TABLE teacher_classes (
+CREATE TABLE IF NOT EXISTS teacher_classes (
     id BIGSERIAL PRIMARY KEY,
     teacher_user_id BIGINT NOT NULL REFERENCES users(id),
     class_name VARCHAR(20) NOT NULL,
