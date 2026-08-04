@@ -36,6 +36,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/biometric/verify").authenticated()
                         .requestMatchers("/api/teacher/**").hasRole("TEACHER")
                         .requestMatchers("/api/attendance/manual").hasRole("TEACHER")
+                        .requestMatchers("/api/attendance/self-checkin").hasRole("STUDENT")
                         .requestMatchers("/api/student/me").authenticated()
                         .requestMatchers("/api/parent/me/children").authenticated()
                         .requestMatchers("/api/academic/**").authenticated()

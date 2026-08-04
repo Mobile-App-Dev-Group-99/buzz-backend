@@ -36,6 +36,17 @@ public class AttendanceController {
         }
     }
 
+    @PostMapping("/self-checkin")
+    public ResponseEntity<?> selfCheckIn(Authentication auth) {
+        Long schoolId = (Long) auth.getPrincipal();
+        String email = (String) auth.getCredentials();
+        try {
+            return ResponseEntity.ok(attendanceService.selfCheckIn(email, schoolId));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
     @GetMapping("/summary/today")
     public ResponseEntity<TodaySummaryResponse> todaySummary(Authentication auth) {
         Long schoolId = (Long) auth.getPrincipal();
