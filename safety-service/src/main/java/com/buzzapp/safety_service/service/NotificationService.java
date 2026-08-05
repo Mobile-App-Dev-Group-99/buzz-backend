@@ -4,6 +4,7 @@ import com.buzzapp.safety_service.dto.*;
 import com.buzzapp.safety_service.model.Notification;
 import com.buzzapp.safety_service.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,13 +13,22 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
+    private final PushNotificationService pushNotificationService;
 
     public NotificationResponse sendNotification(SendNotificationRequest request, Long schoolId) {
+        Long recipientId = request.getRecipientId() != null ? request.getRecipientId() : request.getParentId();
+        String recipientRole = request.getRecipientRole() != null
+                ? request.getRecipientRole().toUpperCase()
+                : "PARENT";
+
         Notification notification = new Notification();
         notification.setParentId(request.getParentId());
+        notification.setRecipientId(recipientId);
+        notification.setRecipientRole(recipientRole);
         notification.setSchoolId(schoolId);
         notification.setMessage(request.getMessage());
         notification.setType(request.getType());
@@ -26,6 +36,8 @@ public class NotificationService {
         notification.setSentAt(LocalDateTime.now());
 
         Notification saved = notificationRepository.save(notification);
+        pushNotificationService.pushToRecipient(
+                recipientRole, recipientId, schoolId, "BuzzApp", saved.getMessage());
         return toResponse(saved);
     }
 
@@ -37,8 +49,21 @@ public class NotificationService {
                 .toList();
     }
 
+    public List<NotificationResponse> getNotificationsByRecipient(String role, Long recipientId, Long schoolId) {
+        return notificationRepository
+                .findByRecipientRoleAndRecipientIdAndSchoolIdOrderBySentAtDesc(
+                        role.toUpperCase(), recipientId, schoolId)
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     public long getUnreadCount(Long parentId, Long schoolId) {
         return notificationRepository.countUnread(parentId, schoolId);
+    }
+
+    public long getUnreadCountByRecipient(String role, Long recipientId, Long schoolId) {
+        return notificationRepository.countUnreadByRecipient(role.toUpperCase(), recipientId, schoolId);
     }
 
     @Transactional
@@ -51,6 +76,11 @@ public class NotificationService {
         notificationRepository.markAllRead(parentId, schoolId);
     }
 
+    @Transactional
+    public void markAllReadByRecipient(String role, Long recipientId, Long schoolId) {
+        notificationRepository.markAllReadByRecipient(role.toUpperCase(), recipientId, schoolId);
+    }
+
     NotificationResponse notify(Long parentId, String message, Long schoolId) {
         return notify(parentId, message, schoolId, null);
     }
@@ -58,6 +88,8 @@ public class NotificationService {
     NotificationResponse notify(Long parentId, String message, Long schoolId, String type) {
         SendNotificationRequest request = new SendNotificationRequest();
         request.setParentId(parentId);
+        request.setRecipientId(parentId);
+        request.setRecipientRole("PARENT");
         request.setMessage(message);
         request.setType(type);
         return sendNotification(request, schoolId);
@@ -67,6 +99,8 @@ public class NotificationService {
         NotificationResponse response = new NotificationResponse();
         response.setId(n.getId());
         response.setParentId(n.getParentId());
+        response.setRecipientId(n.getRecipientId());
+        response.setRecipientRole(n.getRecipientRole());
         response.setSchoolId(n.getSchoolId());
         response.setMessage(n.getMessage());
         response.setType(n.getType());

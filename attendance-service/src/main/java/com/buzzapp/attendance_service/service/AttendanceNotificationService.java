@@ -23,6 +23,7 @@ public class AttendanceNotificationService {
     private final StudentParentRepository studentParentRepository;
     private final ParentRepository parentRepository;
     private final JavaMailSender mailSender;
+    private final PushNotificationService pushNotificationService;
 
     @Value("${app.school.name:BuzzApp}")
     private String schoolName;
@@ -43,12 +44,15 @@ public class AttendanceNotificationService {
             try {
                 Notification notification = new Notification();
                 notification.setParentId(parentId);
+                notification.setRecipientId(parentId);
+                notification.setRecipientRole("PARENT");
                 notification.setSchoolId(schoolId);
                 notification.setMessage(message);
                 notification.setType(status.name());
                 notification.setRead(false);
                 notification.setSentAt(LocalDateTime.now());
                 notificationRepository.save(notification);
+                pushNotificationService.pushToRecipient("PARENT", parentId, schoolId, "BuzzApp", message);
             } catch (Exception e) {
                 log.error("Failed to create notification for parent {}: {}", parentId, e.getMessage());
             }

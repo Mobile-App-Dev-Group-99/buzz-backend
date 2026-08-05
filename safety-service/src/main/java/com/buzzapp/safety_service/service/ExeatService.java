@@ -7,12 +7,16 @@ import com.buzzapp.safety_service.model.Student;
 import com.buzzapp.safety_service.model.StudentParent;
 import com.buzzapp.safety_service.model.User;
 import com.buzzapp.safety_service.repository.ExeatRepository;
+import com.buzzapp.safety_service.repository.ParentRepository;
 import com.buzzapp.safety_service.repository.StudentParentRepository;
 import com.buzzapp.safety_service.repository.StudentRepository;
 import com.buzzapp.safety_service.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -32,6 +36,11 @@ public class ExeatService {
     private final StudentRepository studentRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final ParentRepository parentRepository;
+    private final JavaMailSender mailSender;
+
+    @Value("${app.school.name:BuzzApp}")
+    private String schoolName;
 
     public ExeatResponse createExeat(CreateExeatRequest request, Long schoolId) {
         Student student = studentRepository.findById(request.getStudentId())
@@ -181,7 +190,26 @@ public class ExeatService {
             } catch (Exception e) {
                 log.error("Failed to notify parent {} for student {}: {}", parentId, studentId, e.getMessage());
             }
+            try {
+                parentRepository.findById(parentId).ifPresent(parent -> {
+                    if (parent.getEmail() != null && !parent.getEmail().isBlank()) {
+                        sendEmail(parent.getEmail(), message);
+                    }
+                });
+            } catch (Exception e) {
+                log.error("Failed to email parent {} for student {}: {}", parentId, studentId, e.getMessage());
+            }
         }
+    }
+
+    private void sendEmail(String toEmail, String message) {
+        SimpleMailMessage mail = new SimpleMailMessage();
+        mail.setTo(toEmail);
+        mail.setSubject("BuzzApp — Exeat Update");
+        mail.setText(message + "\n\nSchool: " + schoolName + "\n\n— BuzzApp Team");
+        mail.setFrom("noreply@buzzapp.com");
+        mailSender.send(mail);
+        log.info("Exeat email sent to {}", toEmail);
     }
 
     private Exeat getOwnedExeat(Long exeatId, Long schoolId) {

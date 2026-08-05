@@ -17,6 +17,12 @@ public class Notification {
     @Column(nullable = false)
     private Long parentId;
 
+    @Column
+    private Long recipientId;
+
+    @Column(length = 20)
+    private String recipientRole;
+
     @Column(nullable = false)
     private Long schoolId;
 

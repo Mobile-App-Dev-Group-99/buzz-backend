@@ -9,6 +9,10 @@ public class SendNotificationRequest {
     @NotNull(message = "Parent ID is required")
     private Long parentId;
 
+    private Long recipientId;
+
+    private String recipientRole;
+
     @NotBlank(message = "Message is required")
     private String message;
 
