@@ -7,34 +7,35 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Base64;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.StringJoiner;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class SmsService {
 
-    private static final String HUBTEL_URL = "https://smsc.hubtel.com/v1/messages/send";
+    private static final String TWILIO_URL = "https://api.twilio.com/2010-04-01/Accounts/";
 
-    @Value("${sms.clientId:}")
-    private String smsClientId;
+    @Value("${twilio.accountSid:}")
+    private String twilioAccountSid;
 
-    @Value("${sms.clientSecret:}")
-    private String smsClientSecret;
+    @Value("${twilio.authToken:}")
+    private String twilioAuthToken;
 
-    @Value("${sms.senderId:}")
-    private String smsSenderId;
+    @Value("${twilio.fromNumber:}")
+    private String twilioFromNumber;
 
     public boolean isConfigured() {
-        return smsClientId != null && !smsClientId.isBlank()
-                && smsClientSecret != null && !smsClientSecret.isBlank();
+        return twilioAccountSid != null && !twilioAccountSid.isBlank()
+                && twilioAuthToken != null && !twilioAuthToken.isBlank()
+                && twilioFromNumber != null && !twilioFromNumber.isBlank();
     }
 
     @Async
@@ -47,25 +48,23 @@ public class SmsService {
         try {
             String recipient = normalizePhone(to);
 
-            Map<String, String> body = new LinkedHashMap<>();
-            if (smsSenderId != null && !smsSenderId.isBlank()) {
-                body.put("from", smsSenderId);
-            }
-            body.put("to", recipient);
-            body.put("content", message);
+            StringJoiner form = new StringJoiner("&");
+            form.add("To=" + url(recipient));
+            form.add("From=" + url(twilioFromNumber));
+            form.add("Body=" + url(message));
 
             String credentials = Base64.getEncoder().encodeToString(
-                    (smsClientId + ":" + smsClientSecret).getBytes(StandardCharsets.UTF_8));
+                    (twilioAccountSid + ":" + twilioAuthToken).getBytes(StandardCharsets.UTF_8));
 
             HttpClient client = HttpClient.newBuilder()
                     .connectTimeout(Duration.ofSeconds(5))
                     .build();
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(HUBTEL_URL))
+                    .uri(URI.create(TWILIO_URL + twilioAccountSid + "/Messages.json"))
                     .timeout(Duration.ofSeconds(15))
                     .header("Authorization", "Basic " + credentials)
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(toJson(body)))
+                    .header("Content-Type", "application/x-www-form-urlencoded")
+                    .POST(HttpRequest.BodyPublishers.ofString(form.toString()))
                     .build();
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() >= 400) {
@@ -90,20 +89,7 @@ public class SmsService {
         return cleaned;
     }
 
-    private String toJson(Map<String, String> values) {
-        StringBuilder json = new StringBuilder("{");
-        boolean first = true;
-        for (Map.Entry<String, String> entry : values.entrySet()) {
-            if (!first) json.append(",");
-            first = false;
-            json.append('"').append(entry.getKey()).append("\":\"")
-                    .append(escapeJson(entry.getValue())).append('"');
-        }
-        return json.append('}').toString();
-    }
-
-    private String escapeJson(String value) {
-        if (value == null) return "";
-        return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n");
+    private String url(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 }
