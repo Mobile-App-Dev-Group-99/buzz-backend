@@ -349,6 +349,24 @@ public class AdminController {
         return ResponseEntity.ok(Map.of("message", "Parent deleted successfully"));
     }
 
+    @DeleteMapping("/teacher/{teacherId}")
+    @Transactional
+    public ResponseEntity<?> deleteTeacher(
+            @PathVariable Long teacherId,
+            Authentication auth) {
+        Long schoolId = (Long) auth.getPrincipal();
+        User teacher = userRepository.findById(teacherId).orElse(null);
+        if (teacher == null || !"TEACHER".equals(teacher.getRole())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Teacher not found"));
+        }
+        if (!schoolId.equals(teacher.getSchoolId())) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Teacher not in this school"));
+        }
+        teacherClassRepository.deleteByTeacherUserIdAndSchoolId(teacherId, schoolId);
+        userRepository.deleteById(teacherId);
+        return ResponseEntity.ok(Map.of("message", "Teacher deleted successfully"));
+    }
+
     private StudentResponse toStudentResponse(Student s) {
         StudentResponse r = new StudentResponse();
         r.setId(s.getId());

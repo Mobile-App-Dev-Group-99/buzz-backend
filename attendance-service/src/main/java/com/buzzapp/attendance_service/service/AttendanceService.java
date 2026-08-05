@@ -129,6 +129,7 @@ public class AttendanceService {
         int absent = (int) totalStudents - latestPerStudent.size();
 
         TodaySummaryResponse response = new TodaySummaryResponse();
+        response.setTotalStudents((int) totalStudents);
         response.setPresentToday(present);
         response.setLateArrivals(late);
         response.setAbsent(Math.max(absent, 0));

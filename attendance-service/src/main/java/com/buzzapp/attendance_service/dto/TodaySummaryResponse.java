@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class TodaySummaryResponse {
+    private int totalStudents;
     private int presentToday;
     private int lateArrivals;
     private int absent;
