@@ -35,6 +35,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/onboard-school").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/forgot-password").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/admin/reset-password").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/school/me").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET,  "/api/school/me").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET,  "/api/auth/validate").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/actuator/info").permitAll()

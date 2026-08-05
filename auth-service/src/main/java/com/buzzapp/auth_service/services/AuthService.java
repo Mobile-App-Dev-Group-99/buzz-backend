@@ -126,6 +126,34 @@ public class AuthService {
     }
 
     @Transactional
+    public void changePassword(String email, String currentPassword, String newPassword) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("No account found with this email"));
+
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new RuntimeException("Current password is incorrect");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
+
+    @Transactional
+    public void updateSchool(Long schoolId, UpdateSchoolRequest request) {
+        School school = schoolRepository.findById(schoolId)
+                .orElseThrow(() -> new RuntimeException("School not found"));
+        school.setName(request.getName());
+        school.setLocation(request.getLocation());
+        school.setLevel(request.getLevel());
+        schoolRepository.save(school);
+    }
+
+    public School getSchool(Long schoolId) {
+        return schoolRepository.findById(schoolId)
+                .orElseThrow(() -> new RuntimeException("School not found"));
+    }
+
+    @Transactional
     public void adminResetPassword(String email, String newPassword, org.springframework.security.core.Authentication auth) {
         String adminEmail = (String) auth.getPrincipal();
         User admin = userRepository.findByEmail(adminEmail)

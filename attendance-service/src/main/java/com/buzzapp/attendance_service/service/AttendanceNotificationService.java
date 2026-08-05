@@ -1,5 +1,6 @@
 package com.buzzapp.attendance_service.service;
 
+import com.buzzapp.attendance_service.dto.SchoolSettingsResponse;
 import com.buzzapp.attendance_service.model.*;
 import com.buzzapp.attendance_service.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -24,12 +25,29 @@ public class AttendanceNotificationService {
     private final ParentRepository parentRepository;
     private final JavaMailSender mailSender;
     private final PushNotificationService pushNotificationService;
+    private final SettingsService settingsService;
+    private final PreferenceService preferenceService;
+    private final SmsService smsService;
 
     @Value("${app.school.name:BuzzApp}")
     private String schoolName;
 
     @Async
     public void notifyParents(Student student, AttendanceStatus status, Long schoolId) {
+        String category = switch (status) {
+            case LATE -> "LATE";
+            case ABSENT -> "ABSENT";
+            default -> "ATTENDANCE";
+        };
+
+        SchoolSettingsResponse settings = settingsService.getSettings(schoolId);
+        boolean schoolEnabled = switch (category) {
+            case "LATE" -> settings.isAlertsLate();
+            case "ABSENT" -> settings.isAlertsAbsent();
+            default -> true;
+        };
+        if (!schoolEnabled) return;
+
         List<StudentParent> links = studentParentRepository.findByStudentId(student.getId());
         if (links.isEmpty()) return;
 
@@ -52,19 +70,41 @@ public class AttendanceNotificationService {
                 notification.setRead(false);
                 notification.setSentAt(LocalDateTime.now());
                 notificationRepository.save(notification);
-                pushNotificationService.pushToRecipient("PARENT", parentId, schoolId, "BuzzApp", message);
             } catch (Exception e) {
                 log.error("Failed to create notification for parent {}: {}", parentId, e.getMessage());
             }
 
-            // 2. Send email
-            try {
-                Parent parent = parentRepository.findById(parentId).orElse(null);
-                if (parent != null && parent.getEmail() != null && !parent.getEmail().isBlank()) {
-                    sendEmail(parent.getEmail(), studentName, status, timeStr);
+            // 2. Push — only if the parent has push enabled for this category
+            if (preferenceService.isPushEnabled("PARENT", parentId, category)) {
+                try {
+                    pushNotificationService.pushToRecipient("PARENT", parentId, schoolId, "BuzzApp", message);
+                } catch (Exception e) {
+                    log.error("Failed to push to parent {}: {}", parentId, e.getMessage());
                 }
-            } catch (Exception e) {
-                log.error("Failed to send email to parent {}: {}", parentId, e.getMessage());
+            }
+
+            // 3. Email — only if enabled for this category and an address exists
+            if (preferenceService.isEmailEnabled("PARENT", parentId, category)) {
+                try {
+                    Parent parent = parentRepository.findById(parentId).orElse(null);
+                    if (parent != null && parent.getEmail() != null && !parent.getEmail().isBlank()) {
+                        sendEmail(parent.getEmail(), studentName, status, timeStr);
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to send email to parent {}: {}", parentId, e.getMessage());
+                }
+            }
+
+            // 4. SMS — only if the parent opted in and has a phone number
+            if (preferenceService.isSmsEnabled("PARENT", parentId, category)) {
+                try {
+                    Parent parent = parentRepository.findById(parentId).orElse(null);
+                    if (parent != null && parent.getPhone() != null && !parent.getPhone().isBlank()) {
+                        smsService.sendSms(parent.getPhone(), message + " School: " + schoolName);
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to send SMS to parent {}: {}", parentId, e.getMessage());
+                }
             }
         }
     }

@@ -4,7 +4,6 @@ import com.buzzapp.attendance_service.dto.*;
 import com.buzzapp.attendance_service.model.*;
 import com.buzzapp.attendance_service.repository.*;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,9 +21,7 @@ public class AttendanceService {
     private final TeacherClassRepository teacherClassRepository;
     private final UserRepository userRepository;
     private final AttendanceNotificationService attendanceNotificationService;
-
-    @Value("${attendance.arrival.cutoff}")
-    private String arrivalCutoff;
+    private final SettingsService settingsService;
 
     // ─── 1. POST /api/attendance/scan ────────────────────────────────────────
 
@@ -38,7 +35,7 @@ public class AttendanceService {
         }
 
         LocalDateTime now = LocalDateTime.now();
-        LocalTime cutoff = LocalTime.parse(arrivalCutoff);
+        LocalTime cutoff = LocalTime.parse(settingsService.getArrivalCutoff(schoolId));
 
         boolean isLate = false;
         AttendanceStatus status;

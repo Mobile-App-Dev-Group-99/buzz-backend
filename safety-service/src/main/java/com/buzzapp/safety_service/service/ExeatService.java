@@ -3,6 +3,7 @@ package com.buzzapp.safety_service.service;
 import com.buzzapp.safety_service.dto.*;
 import com.buzzapp.safety_service.model.Exeat;
 import com.buzzapp.safety_service.model.ExeatStatus;
+import com.buzzapp.safety_service.model.Parent;
 import com.buzzapp.safety_service.model.Student;
 import com.buzzapp.safety_service.model.StudentParent;
 import com.buzzapp.safety_service.model.User;
@@ -23,6 +24,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -38,6 +40,9 @@ public class ExeatService {
     private final NotificationService notificationService;
     private final ParentRepository parentRepository;
     private final JavaMailSender mailSender;
+    private final SettingsService settingsService;
+    private final PreferenceService preferenceService;
+    private final SmsService smsService;
 
     @Value("${app.school.name:BuzzApp}")
     private String schoolName;
@@ -181,24 +186,69 @@ public class ExeatService {
         return student != null ? student.getFirstName() + " " + student.getLastName() : "Student #" + studentId;
     }
 
+    public String getExeatsReportCsv(Long schoolId) {
+        StringBuilder csv = new StringBuilder();
+        csv.append("Exeat ID,Student ID,Student Name,Class,Reason,Status,Created At,Expected Return,Actual Return,Approved By\n");
+
+        for (ExeatResponse e : getExeatsBySchoolResolved(schoolId)) {
+            csv.append(e.getId())
+                    .append(',').append(e.getStudentId())
+                    .append(',').append(escapeCsv(e.getStudentName()))
+                    .append(',').append(escapeCsv(e.getStudentClass()))
+                    .append(',').append(escapeCsv(e.getReason()))
+                    .append(',').append(e.getStatus())
+                    .append(',').append(e.getCreatedAt() != null ? e.getCreatedAt() : "")
+                    .append(',').append(e.getExpectedReturn() != null ? e.getExpectedReturn() : "")
+                    .append(',').append(e.getActualReturn() != null ? e.getActualReturn() : "")
+                    .append(',').append(escapeCsv(e.getApprovedByName()))
+                    .append('\n');
+        }
+        return csv.toString();
+    }
+
+    private String escapeCsv(String value) {
+        if (value == null) return "";
+        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
+            return "\"" + value.replace("\"", "\"\"") + "\"";
+        }
+        return value;
+    }
+
     private void notifyParents(Long studentId, String message, Long schoolId, String type) {
+        if (!settingsService.isExeatAlertsEnabled(schoolId)) return;
+
         List<StudentParent> links = studentParentRepository.findByStudentId(studentId);
         for (StudentParent link : links) {
             Long parentId = link.getId().getParentId();
+            Optional<Parent> parentOpt = parentRepository.findById(parentId);
+
             try {
-                notificationService.notify(parentId, message, schoolId, type);
+                boolean pushEnabled = preferenceService.isPushEnabled(
+                        "PARENT", parentId, PreferenceService.EXEAT_CATEGORY);
+                notificationService.notify(parentId, message, schoolId, type, pushEnabled);
             } catch (Exception e) {
                 log.error("Failed to notify parent {} for student {}: {}", parentId, studentId, e.getMessage());
             }
-            try {
-                parentRepository.findById(parentId).ifPresent(parent -> {
-                    if (parent.getEmail() != null && !parent.getEmail().isBlank()) {
+
+            parentOpt.ifPresent(parent -> {
+                if (parent.getEmail() != null && !parent.getEmail().isBlank()
+                        && preferenceService.isEmailEnabled("PARENT", parentId, PreferenceService.EXEAT_CATEGORY)) {
+                    try {
                         sendEmail(parent.getEmail(), message);
+                    } catch (Exception e) {
+                        log.error("Failed to email parent {} for student {}: {}", parentId, studentId, e.getMessage());
                     }
-                });
-            } catch (Exception e) {
-                log.error("Failed to email parent {} for student {}: {}", parentId, studentId, e.getMessage());
-            }
+                }
+
+                if (parent.getPhone() != null && !parent.getPhone().isBlank()
+                        && preferenceService.isSmsEnabled("PARENT", parentId, PreferenceService.EXEAT_CATEGORY)) {
+                    try {
+                        smsService.sendSms(parent.getPhone(), message + " School: " + schoolName);
+                    } catch (Exception e) {
+                        log.error("Failed to SMS parent {} for student {}: {}", parentId, studentId, e.getMessage());
+                    }
+                }
+            });
         }
     }
 

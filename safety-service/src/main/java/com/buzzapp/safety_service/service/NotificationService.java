@@ -20,6 +20,10 @@ public class NotificationService {
     private final PushNotificationService pushNotificationService;
 
     public NotificationResponse sendNotification(SendNotificationRequest request, Long schoolId) {
+        return sendNotificationInternal(request, schoolId, true);
+    }
+
+    private NotificationResponse sendNotificationInternal(SendNotificationRequest request, Long schoolId, boolean pushEnabled) {
         Long recipientId = request.getRecipientId() != null ? request.getRecipientId() : request.getParentId();
         String recipientRole = request.getRecipientRole() != null
                 ? request.getRecipientRole().toUpperCase()
@@ -36,8 +40,10 @@ public class NotificationService {
         notification.setSentAt(LocalDateTime.now());
 
         Notification saved = notificationRepository.save(notification);
-        pushNotificationService.pushToRecipient(
-                recipientRole, recipientId, schoolId, "BuzzApp", saved.getMessage());
+        if (pushEnabled) {
+            pushNotificationService.pushToRecipient(
+                    recipientRole, recipientId, schoolId, "BuzzApp", saved.getMessage());
+        }
         return toResponse(saved);
     }
 
@@ -86,13 +92,17 @@ public class NotificationService {
     }
 
     NotificationResponse notify(Long parentId, String message, Long schoolId, String type) {
+        return notify(parentId, message, schoolId, type, true);
+    }
+
+    NotificationResponse notify(Long parentId, String message, Long schoolId, String type, boolean pushEnabled) {
         SendNotificationRequest request = new SendNotificationRequest();
         request.setParentId(parentId);
         request.setRecipientId(parentId);
         request.setRecipientRole("PARENT");
         request.setMessage(message);
         request.setType(type);
-        return sendNotification(request, schoolId);
+        return sendNotificationInternal(request, schoolId, pushEnabled);
     }
 
     private NotificationResponse toResponse(Notification n) {
